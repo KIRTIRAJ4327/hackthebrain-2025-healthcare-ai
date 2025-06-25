@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../services/medical_ai_service.dart';
+import '../models/triage_models.dart';
 
 /// AI-Powered Medical Triage Screen
 class TriageScreen extends StatefulWidget {
   final bool isQuickAccess;
 
-  const TriageScreen({
-    super.key,
-    this.isQuickAccess = false,
-  });
+  const TriageScreen({super.key, this.isQuickAccess = false});
 
   @override
   State<TriageScreen> createState() => _TriageScreenState();
@@ -22,6 +21,10 @@ class _TriageScreenState extends State<TriageScreen> {
   List<String> _selectedSymptoms = [];
   bool _isAnalyzing = false;
 
+  // 🤖 AI Service for medical analysis
+  final MedicalAIService _aiService = MedicalAIService();
+  TriageResult? _triageResult;
+
   final List<String> _commonSymptoms = [
     'Fever',
     'Cough',
@@ -34,7 +37,7 @@ class _TriageScreenState extends State<TriageScreen> {
     'Abdominal Pain',
     'Joint Pain',
     'Rash',
-    'Sore Throat'
+    'Sore Throat',
   ];
 
   @override
@@ -85,19 +88,13 @@ class _TriageScreenState extends State<TriageScreen> {
           const SizedBox(height: 32),
           const Text(
             'AI-Powered Health Assessment',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
             'Our advanced AI will analyze your symptoms and provide intelligent recommendations to help reduce wait times.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -131,10 +128,7 @@ class _TriageScreenState extends State<TriageScreen> {
           const SizedBox(height: 20),
           const Text(
             '⚡ Reduces assessment time by 70%',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
           ),
         ],
       ),
@@ -149,10 +143,7 @@ class _TriageScreenState extends State<TriageScreen> {
         children: [
           const Text(
             'Tell us about your symptoms',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -242,10 +233,7 @@ class _TriageScreenState extends State<TriageScreen> {
         children: [
           const Text(
             'How severe are your symptoms?',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -286,7 +274,11 @@ class _TriageScreenState extends State<TriageScreen> {
   }
 
   Widget _buildSeverityOption(
-      String title, String description, IconData icon, Color color) {
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
     final isSelected = _selectedSeverity == title;
 
     return InkWell(
@@ -321,10 +313,7 @@ class _TriageScreenState extends State<TriageScreen> {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                   ),
                 ],
               ),
@@ -350,18 +339,11 @@ class _TriageScreenState extends State<TriageScreen> {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.psychology,
-                  size: 80,
-                  color: Colors.purple.shade600,
-                ),
+                Icon(Icons.psychology, size: 80, color: Colors.purple.shade600),
                 const SizedBox(height: 24),
                 const Text(
                   'AI Analysis in Progress',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 const CircularProgressIndicator(),
@@ -369,10 +351,7 @@ class _TriageScreenState extends State<TriageScreen> {
                 Text(
                   'Processing your symptoms...\nAnalyzing risk factors...\nGenerating recommendations...',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade600, height: 1.5),
                 ),
               ],
             ),
@@ -408,11 +387,7 @@ class _TriageScreenState extends State<TriageScreen> {
             ),
             child: Column(
               children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 48,
-                ),
+                const Icon(Icons.check_circle, color: Colors.white, size: 48),
                 const SizedBox(height: 16),
                 const Text(
                   'Analysis Complete!',
@@ -431,31 +406,120 @@ class _TriageScreenState extends State<TriageScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildResultCard(
-            '🎯 Recommended Action',
-            _selectedSeverity == 'Emergency'
-                ? 'Seek immediate emergency care'
-                : _selectedSeverity == 'Severe'
-                    ? 'Schedule urgent care appointment'
-                    : 'Book routine appointment with family doctor',
-            Colors.blue,
-          ),
-          const SizedBox(height: 16),
-          _buildResultCard(
-            '⏱️ Estimated Wait Time',
-            _selectedSeverity == 'Emergency'
-                ? 'Immediate (0-15 minutes)'
-                : _selectedSeverity == 'Severe'
-                    ? '2-4 hours (vs 2-3 weeks normally)'
-                    : '3-5 days (vs 4-6 weeks normally)',
-            Colors.green,
-          ),
-          const SizedBox(height: 16),
-          _buildResultCard(
-            '💊 Next Steps',
-            'AI has identified potential treatments and will connect you with the right specialist',
-            Colors.purple,
-          ),
+          if (_triageResult != null) ...[
+            // Show AI-powered results
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _getUrgencyColor(_triageResult!.ctasLevel),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _getUrgencyIcon(_triageResult!.ctasLevel),
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CTAS Level ${_triageResult!.ctasLevel}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _triageResult!.formattedUrgency,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${(_triageResult!.confidenceScore * 100).toInt()}% confident',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildResultCard(
+              '🎯 Recommended Action',
+              _triageResult!.recommendedAction,
+              Colors.blue,
+            ),
+            const SizedBox(height: 16),
+            _buildResultCard(
+              '⏱️ Estimated Wait Time',
+              _triageResult!.estimatedWaitTime,
+              Colors.green,
+            ),
+            const SizedBox(height: 16),
+            _buildResultCard(
+              '🧠 AI Reasoning',
+              _triageResult!.reasoning,
+              Colors.purple,
+            ),
+            if (_triageResult!.redFlags.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildResultCard(
+                '🚨 Red Flags',
+                _triageResult!.redFlags.join(', '),
+                Colors.red,
+              ),
+            ],
+            if (_triageResult!.nextSteps.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildResultCard(
+                '📋 Next Steps',
+                _triageResult!.nextSteps.join('\n• '),
+                Colors.orange,
+              ),
+            ],
+          ] else ...[
+            // Show fallback results if AI analysis failed
+            _buildResultCard(
+              '🎯 Recommended Action',
+              'Please consult with a healthcare provider for proper assessment',
+              Colors.blue,
+            ),
+            const SizedBox(height: 16),
+            _buildResultCard(
+              '⏱️ Estimated Wait Time',
+              'Contact your healthcare provider',
+              Colors.green,
+            ),
+            const SizedBox(height: 16),
+            _buildResultCard(
+              '💊 Next Steps',
+              'Schedule an appointment with your family doctor or visit urgent care',
+              Colors.purple,
+            ),
+          ],
           const SizedBox(height: 24),
           Row(
             children: [
@@ -501,10 +565,7 @@ class _TriageScreenState extends State<TriageScreen> {
                 color: color.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                Icons.info,
-                color: color,
-              ),
+              child: Icon(Icons.info, color: color),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -521,10 +582,7 @@ class _TriageScreenState extends State<TriageScreen> {
                   const SizedBox(height: 4),
                   Text(
                     content,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                   ),
                 ],
               ),
@@ -613,13 +671,7 @@ class _TriageScreenState extends State<TriageScreen> {
       setState(() {
         _currentStep++;
         if (_currentStep == 3) {
-          _isAnalyzing = true;
-          // Simulate AI analysis
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              setState(() => _isAnalyzing = false);
-            }
-          });
+          _performAIAnalysis();
         }
       });
       _pageController.nextPage(
@@ -628,6 +680,61 @@ class _TriageScreenState extends State<TriageScreen> {
       );
     } else {
       context.go('/home');
+    }
+  }
+
+  /// 🤖 Perform AI-Powered Medical Analysis
+  Future<void> _performAIAnalysis() async {
+    setState(() {
+      _isAnalyzing = true;
+      _triageResult = null;
+    });
+
+    try {
+      // Combine selected symptoms and custom text
+      final allSymptoms = [
+        ..._selectedSymptoms,
+        if (_symptomsController.text.isNotEmpty) _symptomsController.text,
+      ].join(', ');
+
+      print('🩺 Starting AI medical analysis...');
+      print('📝 Symptoms: $allSymptoms');
+      print('⚠️ Severity: $_selectedSeverity');
+
+      // Call AI service for medical analysis
+      final result = await _aiService.analyzeMedicalCase(
+        symptoms: '$allSymptoms. Severity level: $_selectedSeverity',
+        language: 'en', // TODO: Add language selection
+        isVoiceInput: false,
+      );
+
+      if (mounted) {
+        setState(() {
+          _triageResult = result;
+          _isAnalyzing = false;
+        });
+
+        print('✅ AI Analysis Complete!');
+        print('🎯 CTAS Level: ${result.ctasLevel}');
+        print('⏱️ Wait Time: ${result.estimatedWaitTime}');
+        print('🚨 Emergency: ${result.requiresEmergency}');
+      }
+    } catch (e) {
+      print('❌ AI Analysis Error: $e');
+
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+
+        // Show error to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Analysis failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -641,8 +748,45 @@ class _TriageScreenState extends State<TriageScreen> {
     }
   }
 
+  /// 🎨 Get Urgency Color Based on CTAS Level
+  Color _getUrgencyColor(int ctasLevel) {
+    switch (ctasLevel) {
+      case 1:
+        return const Color(0xFFDC2626); // Emergency Red
+      case 2:
+        return const Color(0xFFF59E0B); // Warning Orange
+      case 3:
+        return const Color(0xFFD97706); // Urgent Orange
+      case 4:
+        return const Color(0xFF059669); // Less Urgent Green
+      case 5:
+        return const Color(0xFF10B981); // Non-Urgent Light Green
+      default:
+        return const Color(0xFF6B7280); // Gray
+    }
+  }
+
+  /// 🔗 Get Urgency Icon Based on CTAS Level
+  IconData _getUrgencyIcon(int ctasLevel) {
+    switch (ctasLevel) {
+      case 1:
+        return Icons.emergency; // Emergency
+      case 2:
+        return Icons.warning; // Warning
+      case 3:
+        return Icons.priority_high; // Urgent
+      case 4:
+        return Icons.schedule; // Less Urgent
+      case 5:
+        return Icons.check_circle; // Non-Urgent
+      default:
+        return Icons.help; // Unknown
+    }
+  }
+
   @override
   void dispose() {
+    _aiService.dispose();
     _symptomsController.dispose();
     _pageController.dispose();
     super.dispose();
