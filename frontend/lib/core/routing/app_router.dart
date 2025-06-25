@@ -22,30 +22,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     debugLogDiagnostics: true,
 
-    // Redirect logic for authentication
+    // Redirect logic for authentication - DEMO MODE: Skip auth for hackathon
     redirect: (context, state) {
-      final isAuthenticated = authState is AuthAuthenticated;
-
-      final isGoingToAuth = state.uri.path.startsWith('/auth');
-      final isGoingToSplash = state.uri.path == '/splash';
-      final isGoingToEmergency = state.uri.path == '/emergency';
-
-      // Allow emergency access without authentication
-      if (isGoingToEmergency) return null;
-
-      // Allow splash screen
-      if (isGoingToSplash) return null;
-
-      // Redirect to login if not authenticated and not going to auth
-      if (!isAuthenticated && !isGoingToAuth) {
-        return '/auth/login';
-      }
-
-      // Redirect to home if authenticated and going to auth
-      if (isAuthenticated && isGoingToAuth) {
-        return '/home';
-      }
-
+      // Skip authentication for demo - allow all routes
       return null;
     },
 
@@ -222,11 +201,11 @@ class MainNavigationWrapper extends StatelessWidget {
 }
 
 /// Healthcare-themed Bottom Navigation
-class HealthcareBottomNavigation extends ConsumerWidget {
+class HealthcareBottomNavigation extends StatelessWidget {
   const HealthcareBottomNavigation({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
 
     int getCurrentIndex() {
@@ -240,6 +219,8 @@ class HealthcareBottomNavigation extends ConsumerWidget {
 
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
+      selectedItemColor: const Color(0xFF2563EB),
+      unselectedItemColor: Colors.grey,
       currentIndex: getCurrentIndex(),
       onTap: (index) {
         switch (index) {

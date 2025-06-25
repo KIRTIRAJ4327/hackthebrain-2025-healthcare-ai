@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// Splash Screen for Healthcare AI App
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Auto-navigate to home after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        context.go('/home');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +83,18 @@ class SplashScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.white70,
+                fontFamily: 'Inter',
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Loading to Home hint
+            const Text(
+              'Loading your dashboard...',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white60,
                 fontFamily: 'Inter',
               ),
             ),

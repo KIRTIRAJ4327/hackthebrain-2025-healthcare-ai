@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.8.1 <4.0.0'
   flutter: ">=3.16.0"
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -40,9 +40,9 @@ dependencies:
   flutter_riverpod: ^2.6.1
   
   # Firebase & Google Services (Essential)
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
-  cloud_firestore: ^5.4.3
+  firebase_core: ^3.10.0
+  firebase_database: ^11.3.4
+  firebase_auth: ^5.3.5
   
   # Basic HTTP for API calls
   http: ^1.2.2
@@ -96,11 +96,11 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   # fonts:
-  #   - family: Schyler
+  #   - family: Inter
   #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
+  #       - asset: assets/fonts/Inter-Regular.ttf
+  #       - asset: assets/fonts/Inter-Bold.ttf
+  #         weight: 700
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf
