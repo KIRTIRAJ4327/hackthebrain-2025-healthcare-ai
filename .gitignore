@@ -134,3 +134,14 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Healthcare AI Project - Credentials & Secrets
+credentials/
+*.json.json
+service-account*.json
+*.key
+*.pem
+
+# Flutter
+frontend/build/
+frontend/.dart_tool/
