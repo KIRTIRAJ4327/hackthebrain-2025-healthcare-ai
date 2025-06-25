@@ -5,18 +5,18 @@ import 'package:flutter/services.dart';
 /// Professional medical theme with accessibility and trust-building design
 class AppTheme {
   // Healthcare Brand Colors
-  static const Color primaryBlue = Color(0xFF2563EB);  // Medical blue
+  static const Color primaryBlue = Color(0xFF2563EB); // Medical blue
   static const Color primaryGreen = Color(0xFF059669); // Health green
-  static const Color emergencyRed = Color(0xFFDC2626);  // Emergency red
+  static const Color emergencyRed = Color(0xFFDC2626); // Emergency red
   static const Color warningOrange = Color(0xFFF59E0B); // Warning orange
-  static const Color successGreen = Color(0xFF10B981);  // Success green
-  
+  static const Color successGreen = Color(0xFF10B981); // Success green
+
   // Neutral Colors
   static const Color darkGray = Color(0xFF1F2937);
   static const Color mediumGray = Color(0xFF6B7280);
   static const Color lightGray = Color(0xFFF9FAFB);
   static const Color white = Color(0xFFFFFFFF);
-  
+
   // Background Colors
   static const Color backgroundLight = Color(0xFFFAFAFA);
   static const Color backgroundDark = Color(0xFF0F172A);
@@ -27,7 +27,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      
+
       // Color Scheme
       colorScheme: const ColorScheme.light(
         primary: primaryBlue,
@@ -41,7 +41,7 @@ class AppTheme {
         onBackground: darkGray,
         onError: white,
       ),
-      
+
       // App Bar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: white,
@@ -56,9 +56,9 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: white,
         elevation: 2,
         shadowColor: darkGray.withOpacity(0.1),
@@ -66,7 +66,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -84,7 +84,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -101,7 +101,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
@@ -114,7 +114,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -135,14 +135,15 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: emergencyRed, width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         hintStyle: const TextStyle(
           color: mediumGray,
           fontSize: 16,
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Text Theme
       textTheme: const TextTheme(
         // Headlines
@@ -164,7 +165,7 @@ class AppTheme {
           color: darkGray,
           fontFamily: 'Inter',
         ),
-        
+
         // Titles
         titleLarge: TextStyle(
           fontSize: 22,
@@ -184,7 +185,7 @@ class AppTheme {
           color: darkGray,
           fontFamily: 'Inter',
         ),
-        
+
         // Body text
         bodyLarge: TextStyle(
           fontSize: 16,
@@ -207,7 +208,7 @@ class AppTheme {
           fontFamily: 'Inter',
           height: 1.4,
         ),
-        
+
         // Labels
         labelLarge: TextStyle(
           fontSize: 14,
@@ -228,7 +229,7 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Floating Action Button Theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: primaryGreen,
@@ -236,7 +237,7 @@ class AppTheme {
         elevation: 4,
         shape: CircleBorder(),
       ),
-      
+
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: white,
@@ -245,7 +246,7 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
-      
+
       // Chip Theme
       chipTheme: ChipThemeData(
         backgroundColor: lightGray,
@@ -258,9 +259,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(20),
         ),
       ),
-      
+
       // Dialog Theme
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: white,
         elevation: 8,
         shape: RoundedRectangleBorder(
@@ -274,7 +275,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      
+
       // Color Scheme
       colorScheme: const ColorScheme.dark(
         primary: primaryBlue,
@@ -288,7 +289,7 @@ class AppTheme {
         onBackground: lightGray,
         onError: white,
       ),
-      
+
       // App Bar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: surfaceDark,
@@ -303,9 +304,9 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      
+
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceDark,
         elevation: 4,
         shadowColor: Colors.black.withOpacity(0.3),
@@ -313,7 +314,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       // Text Theme (adapted for dark mode)
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
@@ -333,16 +334,16 @@ class AppTheme {
       ),
     );
   }
-  
+
   // Custom Healthcare Colors for Medical Conditions
   static const Map<String, Color> medicalColors = {
-    'critical': Color(0xFFDC2626),    // Critical/Emergency
-    'urgent': Color(0xFFF59E0B),      // Urgent care
-    'routine': Color(0xFF10B981),     // Routine care
-    'preventive': Color(0xFF3B82F6),  // Preventive care
-    'mental': Color(0xFF8B5CF6),      // Mental health
-    'cardiac': Color(0xFFEF4444),     // Cardiac care
+    'critical': Color(0xFFDC2626), // Critical/Emergency
+    'urgent': Color(0xFFF59E0B), // Urgent care
+    'routine': Color(0xFF10B981), // Routine care
+    'preventive': Color(0xFF3B82F6), // Preventive care
+    'mental': Color(0xFF8B5CF6), // Mental health
+    'cardiac': Color(0xFFEF4444), // Cardiac care
     'respiratory': Color(0xFF06B6D4), // Respiratory
     'neurological': Color(0xFF6366F1), // Neurological
   };
-} 
+}

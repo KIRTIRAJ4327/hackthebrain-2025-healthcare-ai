@@ -17,41 +17,38 @@ import '../providers/auth_provider.dart';
 /// Handles navigation and route protection for the medical application
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
-  
+
   return GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: true,
-    
+
     // Redirect logic for authentication
     redirect: (context, state) {
-      final isAuthenticated = authState.maybeWhen(
-        authenticated: (_) => true,
-        orElse: () => false,
-      );
-      
-      final isGoingToAuth = state.location.startsWith('/auth');
-      final isGoingToSplash = state.location == '/splash';
-      final isGoingToEmergency = state.location == '/emergency';
-      
+      final isAuthenticated = authState is AuthAuthenticated;
+
+      final isGoingToAuth = state.uri.path.startsWith('/auth');
+      final isGoingToSplash = state.uri.path == '/splash';
+      final isGoingToEmergency = state.uri.path == '/emergency';
+
       // Allow emergency access without authentication
       if (isGoingToEmergency) return null;
-      
+
       // Allow splash screen
       if (isGoingToSplash) return null;
-      
+
       // Redirect to login if not authenticated and not going to auth
       if (!isAuthenticated && !isGoingToAuth) {
         return '/auth/login';
       }
-      
+
       // Redirect to home if authenticated and going to auth
       if (isAuthenticated && isGoingToAuth) {
         return '/home';
       }
-      
+
       return null;
     },
-    
+
     routes: [
       // Splash Screen
       GoRoute(
@@ -59,32 +56,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      
+
       // Authentication Routes
       GoRoute(
         path: '/auth',
         redirect: (context, state) => '/auth/login',
       ),
-      
+
       GoRoute(
         path: '/auth/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
-      
+
       GoRoute(
         path: '/auth/register',
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
       ),
-      
+
       // Emergency Route (No Auth Required)
       GoRoute(
         path: '/emergency',
         name: 'emergency',
         builder: (context, state) => const EmergencyScreen(),
       ),
-      
+
       // Main App Routes (Authentication Required)
       ShellRoute(
         builder: (context, state, child) {
@@ -101,11 +98,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'quick-triage',
                 name: 'quick-triage',
-                builder: (context, state) => const TriageScreen(isQuickAccess: true),
+                builder: (context, state) =>
+                    const TriageScreen(isQuickAccess: true),
               ),
             ],
           ),
-          
+
           // Medical Triage System
           GoRoute(
             path: '/triage',
@@ -122,7 +120,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           // Appointments Management
           GoRoute(
             path: '/appointments',
@@ -133,8 +131,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'book',
                 name: 'book-appointment',
                 builder: (context, state) {
-                  final providerId = state.queryParameters['providerId'];
-                  final specialty = state.queryParameters['specialty'];
+                  final providerId = state.uri.queryParameters['providerId'];
+                  final specialty = state.uri.queryParameters['specialty'];
                   return BookAppointmentScreen(
                     providerId: providerId,
                     specialty: specialty,
@@ -151,7 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           // Healthcare Providers
           GoRoute(
             path: '/providers',
@@ -168,7 +166,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           // User Profile
           GoRoute(
             path: '/profile',
@@ -187,7 +185,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           // Analytics Dashboard (for providers)
           GoRoute(
             path: '/analytics',
@@ -197,7 +195,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
-    
+
     // Error handling
     errorBuilder: (context, state) => NotFoundScreen(
       error: state.error?.toString() ?? 'Page not found',
@@ -208,7 +206,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 /// Main Navigation Wrapper with Bottom Navigation
 class MainNavigationWrapper extends StatelessWidget {
   final Widget child;
-  
+
   const MainNavigationWrapper({
     super.key,
     required this.child,
@@ -229,8 +227,8 @@ class HealthcareBottomNavigation extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).location;
-    
+    final location = GoRouterState.of(context).uri.path;
+
     int getCurrentIndex() {
       if (location.startsWith('/home')) return 0;
       if (location.startsWith('/triage')) return 1;
@@ -239,7 +237,7 @@ class HealthcareBottomNavigation extends ConsumerWidget {
       if (location.startsWith('/profile')) return 4;
       return 0;
     }
-    
+
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
       currentIndex: getCurrentIndex(),
@@ -339,4 +337,4 @@ class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
   @override
   Widget build(BuildContext context) => const Placeholder();
-} 
+}

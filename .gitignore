@@ -135,13 +135,147 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# Healthcare AI Project - Credentials & Secrets
+# 🏥 Healthcare AI Project - Security & Credentials
 credentials/
 *.json.json
 service-account*.json
 *.key
 *.pem
+.env.production
+.env.staging
+firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist
 
-# Flutter
-frontend/build/
-frontend/.dart_tool/
+# 📱 Flutter & Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+pubspec.lock
+
+# Flutter Web
+**/web/packages/
+**/web/.packages
+**/web/pubspec.lock
+
+# Flutter/Dart/Pub related
+**/doc/api/
+.dartServer
+.fvm/
+
+# 💻 IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# 🤖 Android
+**/android/local.properties
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/key.properties
+*.jks
+*.keystore
+
+# 🍎 iOS
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/ephemeral/
+
+# 🖥 Windows
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
+
+# 🐧 Linux
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+**/linux/flutter/generated_plugins.cmake
+
+# 🌐 Web
+**/web/packages/
+**/web/.packages
+
+# 🧪 Testing
+coverage/
+test_driver/
+.test_coverage.dart
+flutter_*.png
+
+# 📊 Analytics & Monitoring
+*.hprof
+.DS_Store
+Thumbs.db
+
+# 🚀 Deployment
+deployment/
+*.zip
+*.tar.gz
+
+# 📝 Documentation Build
+docs/build/
+**/doc/api/
+
+# 🔧 Tool Configuration
+.metadata
+.packages
+pubspec.lock
+
+# 🎯 Healthcare AI Specific
+# Patient data (never commit real patient data)
+patient_data/
+test_data/
+medical_records/
+
+# AI Model files (large files, use Git LFS or external storage)
+*.model
+*.weights
+*.h5
+*.pkl
+*.joblib
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
