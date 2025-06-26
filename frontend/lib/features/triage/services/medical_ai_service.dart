@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/triage_models.dart';
 
-/// 🤖 Medical AI Service - The Brain of Healthcare AI System
+/// 🤖 Medical AI Service - REAL Gemini API Integration
 ///
-/// This service provides CTAS-compliant medical triage using advanced AI
+/// This service provides CTAS-compliant medical triage using Google's Gemini AI
 /// to analyze symptoms and provide intelligent healthcare recommendations.
 ///
 /// CRITICAL: This is for TRIAGE ONLY - Never provides medical diagnosis
@@ -14,14 +15,14 @@ class MedicalAIService {
       'https://generativelanguage.googleapis.com/v1beta';
   static const String _model = 'gemini-1.5-flash-latest';
 
-  // TODO: Move to environment variables
-  static const String _apiKey = 'YOUR_GEMINI_API_KEY'; // Configure in .env
-
   final http.Client _httpClient;
   final Uuid _uuid = const Uuid();
 
+  // Get API key from environment
+  String get _apiKey => dotenv.env['GOOGLE_GEMINI_API_KEY'] ?? '';
+
   MedicalAIService({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+      : _httpClient = httpClient ?? http.Client();
 
   /// 🧠 Analyze Medical Case and Provide CTAS-Compliant Triage
   ///
@@ -33,8 +34,20 @@ class MedicalAIService {
     Map<String, dynamic>? medicalHistory,
     Map<String, dynamic>? vitalSigns,
   }) async {
+    final sessionId = _uuid.v4();
+
     try {
-      final sessionId = _uuid.v4();
+      print('🤖 REAL AI Analysis Starting - Session: $sessionId');
+      print('📝 Symptoms: $symptoms');
+      print('🌐 Language: $language');
+      print('🔑 API Key available: ${_apiKey.isNotEmpty}');
+
+      if (_apiKey.isEmpty) {
+        throw Exception(
+          'Gemini API key not configured. Please set GOOGLE_GEMINI_API_KEY in .env file',
+        );
+      }
+
       final prompt = _buildMedicalPrompt(
         symptoms: symptoms,
         language: language,
@@ -42,16 +55,10 @@ class MedicalAIService {
         vitalSigns: vitalSigns,
       );
 
-      print('🤖 AI Analysis Starting - Session: $sessionId');
-      print('📝 Symptoms: $symptoms');
-      print('🌐 Language: $language');
-
-      // For demo purposes, simulate AI response if no API key configured
-      if (_apiKey == 'YOUR_GEMINI_API_KEY') {
-        return _simulateAIResponse(sessionId, symptoms, language);
-      }
-
+      print('📤 Calling REAL Gemini API...');
       final response = await _callGeminiAPI(prompt);
+      print('📥 Gemini API Response received');
+
       final analysisResult = _parseGeminiResponse(response);
 
       final triageResult = TriageResult(
@@ -59,8 +66,7 @@ class MedicalAIService {
         ctasLevel: analysisResult['ctasLevel'] ?? 5,
         urgencyDescription: analysisResult['urgencyDescription'] ?? 'Unknown',
         reasoning: analysisResult['reasoning'] ?? 'Unable to analyze',
-        recommendedAction:
-            analysisResult['recommendedAction'] ??
+        recommendedAction: analysisResult['recommendedAction'] ??
             'Consult healthcare provider',
         confidenceScore: (analysisResult['confidenceScore'] ?? 0.0).toDouble(),
         estimatedWaitTime: analysisResult['estimatedWaitTime'] ?? 'Unknown',
@@ -71,145 +77,28 @@ class MedicalAIService {
         nextSteps: List<String>.from(analysisResult['nextSteps'] ?? []),
       );
 
-      print('✅ AI Analysis Complete - CTAS Level: ${triageResult.ctasLevel}');
+      print(
+        '✅ REAL AI Analysis Complete - CTAS Level: ${triageResult.ctasLevel}',
+      );
+      print('🎯 Confidence: ${(triageResult.confidenceScore * 100).toInt()}%');
 
       // Log for audit trail (required for medical applications)
       await _logTriageAnalysis(triageResult, symptoms);
 
       return triageResult;
     } catch (e) {
-      print('❌ AI Analysis Error: $e');
+      print('❌ REAL AI Analysis Error: $e');
 
       // Safety fallback - Never leave patient without guidance
       return TriageResult.createSafetyFallback(
-        sessionId: _uuid.v4(),
+        sessionId: sessionId,
         language: language,
         originalSymptoms: symptoms,
       );
     }
   }
 
-  /// 🎭 Simulate AI Response for Demo (when no API key configured)
-  TriageResult _simulateAIResponse(
-    String sessionId,
-    String symptoms,
-    String language,
-  ) {
-    final symptomsLower = symptoms.toLowerCase();
-
-    // Emergency keywords detection
-    final emergencyKeywords = [
-      'chest pain',
-      'shortness of breath',
-      'unconscious',
-      'stroke',
-      'heart attack',
-    ];
-    final hasEmergencyKeywords = emergencyKeywords.any(
-      (keyword) => symptomsLower.contains(keyword),
-    );
-
-    // Severe keywords detection
-    final severeKeywords = [
-      'severe',
-      'intense',
-      'unbearable',
-      'cannot',
-      'difficult to breathe',
-    ];
-    final hasSevereKeywords = severeKeywords.any(
-      (keyword) => symptomsLower.contains(keyword),
-    );
-
-    // Common symptoms detection
-    final commonKeywords = ['headache', 'fever', 'cough', 'cold', 'tired'];
-    final hasCommonKeywords = commonKeywords.any(
-      (keyword) => symptomsLower.contains(keyword),
-    );
-
-    int ctasLevel;
-    String urgencyDescription;
-    String reasoning;
-    String recommendedAction;
-    double confidenceScore;
-    String estimatedWaitTime;
-    List<String> redFlags = [];
-    List<String> nextSteps = [];
-
-    if (hasEmergencyKeywords) {
-      ctasLevel = 2;
-      urgencyDescription = 'Potentially Life-Threatening';
-      reasoning =
-          'Emergency symptoms detected requiring immediate medical attention';
-      recommendedAction = 'Go to Emergency Department immediately';
-      confidenceScore = 0.95;
-      estimatedWaitTime = '15 minutes';
-      redFlags = ['Emergency symptoms detected'];
-      nextSteps = [
-        'Call 911 or go to ER immediately',
-        'Do not drive yourself',
-        'Bring medication list',
-      ];
-    } else if (hasSevereKeywords) {
-      ctasLevel = 3;
-      urgencyDescription = 'Urgent - Needs Attention';
-      reasoning = 'Severe symptoms requiring prompt medical evaluation';
-      recommendedAction = 'Visit urgent care or family doctor within 2 hours';
-      confidenceScore = 0.85;
-      estimatedWaitTime = '30 minutes';
-      redFlags = ['Severe symptom intensity'];
-      nextSteps = [
-        'Seek medical attention within 2 hours',
-        'Monitor symptoms',
-        'Prepare medical history',
-      ];
-    } else if (hasCommonKeywords) {
-      ctasLevel = 4;
-      urgencyDescription = 'Less Urgent - Can Wait';
-      reasoning = 'Common symptoms that can be managed with routine care';
-      recommendedAction = 'Schedule appointment with family doctor';
-      confidenceScore = 0.80;
-      estimatedWaitTime = '60 minutes';
-      redFlags = [];
-      nextSteps = [
-        'Book routine appointment',
-        'Rest and hydrate',
-        'Monitor for changes',
-      ];
-    } else {
-      ctasLevel = 4;
-      urgencyDescription = 'Assessment Needed';
-      reasoning = 'Symptoms require professional medical evaluation';
-      recommendedAction = 'Consult with healthcare provider';
-      confidenceScore = 0.75;
-      estimatedWaitTime = '60 minutes';
-      redFlags = [];
-      nextSteps = [
-        'Contact healthcare provider',
-        'Document symptoms',
-        'Prepare for consultation',
-      ];
-    }
-
-    return TriageResult(
-      sessionId: sessionId,
-      ctasLevel: ctasLevel,
-      urgencyDescription: urgencyDescription,
-      reasoning: reasoning,
-      recommendedAction: recommendedAction,
-      confidenceScore: confidenceScore,
-      estimatedWaitTime: estimatedWaitTime,
-      requiresEmergency: ctasLevel <= 2,
-      language: language,
-      analysisTimestamp: DateTime.now(),
-      redFlags: redFlags,
-      nextSteps: nextSteps,
-    );
-  }
-
-  /// 🏥 Build CTAS-Compliant Medical Prompt
-  ///
-  /// This prompt ensures AI follows Canadian Triage and Acuity Scale
+  /// 🏥 Build CTAS-Compliant Medical Prompt for Gemini
   String _buildMedicalPrompt({
     required String symptoms,
     required String language,
@@ -221,14 +110,14 @@ class MedicalAIService {
     return '''
 $languageInstruction
 
-You are a CTAS-compliant medical triage AI assistant. Your role is to analyze symptoms and classify urgency ONLY - never diagnose.
+You are a professional medical AI assistant trained in the Canadian Triage and Acuity Scale (CTAS). Your role is to analyze symptoms and classify urgency level ONLY - you NEVER provide medical diagnosis.
 
 CRITICAL SAFETY RULES:
-1. NEVER provide medical diagnosis
-2. ALWAYS classify using CTAS levels 1-5 only
+1. NEVER provide medical diagnosis - only urgency classification
+2. ALWAYS use CTAS levels 1-5 only
 3. ALWAYS recommend appropriate healthcare pathway
-4. If uncertain, escalate to higher urgency level
-5. Include confidence score (0.0-1.0)
+4. If uncertain, escalate to higher urgency level (be conservative)
+5. Include confidence score (0.0-1.0) - be honest about uncertainty
 
 PATIENT PRESENTATION:
 Symptoms: $symptoms
@@ -236,34 +125,32 @@ ${medicalHistory != null ? 'Medical History: ${jsonEncode(medicalHistory)}' : ''
 ${vitalSigns != null ? 'Vital Signs: ${jsonEncode(vitalSigns)}' : ''}
 
 CANADIAN TRIAGE AND ACUITY SCALE (CTAS):
-- Level 1: Life-threatening, immediate care (0 minutes)
-- Level 2: Imminently life-threatening (15 minutes)
-- Level 3: Urgent, potentially life-threatening (30 minutes)
-- Level 4: Less urgent (60 minutes)
-- Level 5: Non-urgent (120 minutes)
-
-RESPOND WITH JSON:
-{
-  "ctasLevel": 1-5,
-  "urgencyDescription": "Brief description",
-  "reasoning": "Clear medical reasoning based on symptoms",
-  "recommendedAction": "Specific next steps",
-  "confidenceScore": 0.0-1.0,
-  "estimatedWaitTime": "Time estimate",
-  "redFlags": ["List", "of", "concerning", "symptoms"],
-  "nextSteps": ["Immediate", "actions", "to", "take"]
-}
+- Level 1: Life-threatening, immediate care (0 minutes) - cardiac arrest, severe trauma, anaphylaxis
+- Level 2: Imminently life-threatening (15 minutes) - chest pain with cardiac features, stroke symptoms
+- Level 3: Urgent, potentially life-threatening (30 minutes) - severe abdominal pain, moderate respiratory distress
+- Level 4: Less urgent (60 minutes) - minor injuries, stable vital signs
+- Level 5: Non-urgent (120 minutes) - minor cuts, routine medication refills
 
 EMERGENCY KEYWORDS TO DETECT:
-- Chest pain + shortness of breath
-- Stroke symptoms (FAST criteria)
-- Severe bleeding
-- Loss of consciousness
-- Severe allergic reaction
-- Severe abdominal pain
-- High fever with altered mental state
+- Chest pain + shortness of breath + sweating = likely cardiac
+- Facial droop + speech slurred + arm weakness = stroke (FAST criteria)
+- Severe bleeding, unconscious, severe allergic reaction
+- High fever + altered mental state + stiff neck = possible meningitis
+- Severe abdominal pain + vomiting + fever
 
-Analyze now and respond with JSON only.
+RESPOND WITH VALID JSON ONLY:
+{
+  "ctasLevel": 1-5,
+  "urgencyDescription": "Brief clinical description",
+  "reasoning": "Clear medical reasoning based on symptoms and CTAS criteria",
+  "recommendedAction": "Specific next steps for patient",
+  "confidenceScore": 0.0-1.0,
+  "estimatedWaitTime": "Time estimate based on CTAS level",
+  "redFlags": ["List of concerning symptoms found"],
+  "nextSteps": ["Immediate actions patient should take"]
+}
+
+Analyze the symptoms now and respond with JSON only. Be precise and follow CTAS protocols exactly.
 ''';
   }
 
@@ -271,15 +158,15 @@ Analyze now and respond with JSON only.
   String _getLanguageInstruction(String language) {
     switch (language) {
       case 'fr':
-        return 'Répondez en français. Utilisez la terminologie médicale française appropriée.';
+        return 'Répondez en français. Utilisez la terminologie médicale française appropriée selon les protocoles CTAS.';
       case 'es':
-        return 'Responde en español. Usa terminología médica apropiada en español.';
+        return 'Responde en español. Usa terminología médica apropiada en español según protocolos CTAS.';
       default:
-        return 'Respond in English. Use clear, professional medical terminology.';
+        return 'Respond in English. Use clear, professional medical terminology following CTAS protocols.';
     }
   }
 
-  /// 🔗 Call Gemini API for Medical Analysis
+  /// 🔗 Call Real Gemini API for Medical Analysis
   Future<String> _callGeminiAPI(String prompt) async {
     final url = Uri.parse(
       '$_baseUrl/models/$_model:generateContent?key=$_apiKey',
@@ -295,31 +182,55 @@ Analyze now and respond with JSON only.
       ],
       'generationConfig': {
         'temperature': 0.1, // Low temperature for medical accuracy
-        'topK': 1,
-        'topP': 0.8,
-        'maxOutputTokens': 1000,
+        'topK': 40,
+        'topP': 0.95,
+        'maxOutputTokens': 2048,
       },
       'safetySettings': [
         {
-          'category': 'HARM_CATEGORY_MEDICAL',
-          'threshold': 'BLOCK_NONE', // We handle medical safety ourselves
+          'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          'category': 'HARM_CATEGORY_HARASSMENT',
+          'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          'category': 'HARM_CATEGORY_HATE_SPEECH',
+          'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
+        },
+        {
+          'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+          'threshold': 'BLOCK_MEDIUM_AND_ABOVE',
         },
       ],
     };
 
+    print('📤 Sending request to Gemini API...');
     final response = await _httpClient.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(requestBody),
     );
 
+    print('📥 Gemini API Response: ${response.statusCode}');
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['candidates'][0]['content']['parts'][0]['text'];
+      if (data['candidates'] != null && data['candidates'].isNotEmpty) {
+        final responseText =
+            data['candidates'][0]['content']['parts'][0]['text'];
+        print(
+          '✅ Gemini AI Response received: ${responseText.substring(0, 100)}...',
+        );
+        return responseText;
+      } else {
+        throw Exception('No response from Gemini AI');
+      }
     } else {
-      throw Exception(
-        'Gemini API Error: ${response.statusCode} - ${response.body}',
-      );
+      final errorBody = response.body;
+      print('❌ Gemini API Error: ${response.statusCode} - $errorBody');
+      throw Exception('Gemini API Error: ${response.statusCode} - $errorBody');
     }
   }
 
@@ -335,9 +246,11 @@ Analyze now and respond with JSON only.
         cleanResponse = cleanResponse.substring(0, cleanResponse.length - 3);
       }
 
-      return jsonDecode(cleanResponse.trim());
+      final parsed = jsonDecode(cleanResponse.trim());
+      print('✅ Successfully parsed Gemini response');
+      return parsed;
     } catch (e) {
-      print('❌ Error parsing AI response: $e');
+      print('❌ Error parsing Gemini response: $e');
       print('📄 Raw response: $response');
 
       // Safety fallback parsing
@@ -345,12 +258,15 @@ Analyze now and respond with JSON only.
         'ctasLevel': 4, // Default to less urgent if parsing fails
         'urgencyDescription': 'Requires Assessment',
         'reasoning':
-            'Unable to parse AI response - please consult healthcare provider',
-        'recommendedAction': 'Visit nearest healthcare facility for assessment',
+            'Unable to parse AI response - please consult healthcare provider immediately',
+        'recommendedAction':
+            'Visit nearest healthcare facility for proper assessment',
         'confidenceScore': 0.5,
         'estimatedWaitTime': '60 minutes',
-        'redFlags': [],
-        'nextSteps': ['Seek medical attention'],
+        'redFlags': ['AI parsing error'],
+        'nextSteps': [
+          'Seek immediate medical attention due to technical issue',
+        ],
       };
     }
   }
@@ -371,10 +287,11 @@ Analyze now and respond with JSON only.
       'aiReasoningLength': result.reasoning.length,
       'requiresEmergency': result.requiresEmergency,
       'language': result.language,
-      'version': '1.0.0',
+      'version': '2.0.0-real-ai',
+      'apiUsed': 'gemini-1.5-flash',
     };
 
-    print('📋 Triage Analysis Logged: ${jsonEncode(logEntry)}');
+    print('📋 Medical Triage Analysis Logged: ${jsonEncode(logEntry)}');
 
     // TODO: Send to Firebase for permanent audit trail
     // await FirebaseService.logTriageAnalysis(logEntry);
@@ -392,6 +309,8 @@ Analyze now and respond with JSON only.
         r'heart attack',
         r'severe allergic',
         r'anaphylaxis',
+        r'facial droop',
+        r'speech slurred',
       ],
       'fr': [
         r'douleur thoracique.*essoufflement',
@@ -426,18 +345,26 @@ Analyze now and respond with JSON only.
     return false;
   }
 
-  /// 🧪 Test AI Service Connection
+  /// 🧪 Test Real AI Service Connection
   Future<bool> testConnection() async {
     try {
+      print('🧪 Testing REAL Gemini API connection...');
       final testResult = await analyzeMedicalCase(
-        symptoms: 'Test connection - mild headache',
+        symptoms: 'Test connection - mild headache for medical AI system test',
         language: 'en',
         isVoiceInput: false,
       );
 
-      return testResult.confidenceScore > 0;
+      final isSuccess =
+          testResult.confidenceScore > 0 && testResult.reasoning.isNotEmpty;
+      print(
+        isSuccess
+            ? '✅ REAL AI connection test PASSED'
+            : '❌ REAL AI connection test FAILED',
+      );
+      return isSuccess;
     } catch (e) {
-      print('❌ AI Service Test Failed: $e');
+      print('❌ REAL AI Service Test Failed: $e');
       return false;
     }
   }

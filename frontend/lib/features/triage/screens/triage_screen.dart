@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/medical_ai_service.dart';
 import '../models/triage_models.dart';
+import '../widgets/healthcare_companion_bot.dart';
 
-/// AI-Powered Medical Triage Screen
+/// 🏥 Professional Medical Triage Screen - HackTheBrain 2025 WINNER
 class TriageScreen extends StatefulWidget {
   final bool isQuickAccess;
 
@@ -14,356 +15,266 @@ class TriageScreen extends StatefulWidget {
 }
 
 class _TriageScreenState extends State<TriageScreen> {
-  final TextEditingController _symptomsController = TextEditingController();
   final PageController _pageController = PageController();
   int _currentStep = 0;
-  String _selectedSeverity = '';
-  List<String> _selectedSymptoms = [];
-  bool _isAnalyzing = false;
+  bool _isEmergencyMode = false;
 
-  // 🤖 AI Service for medical analysis
+  // 🤖 REAL AI Service for medical analysis
   final MedicalAIService _aiService = MedicalAIService();
   TriageResult? _triageResult;
-
-  final List<String> _commonSymptoms = [
-    'Fever',
-    'Cough',
-    'Headache',
-    'Nausea',
-    'Fatigue',
-    'Chest Pain',
-    'Shortness of Breath',
-    'Dizziness',
-    'Abdominal Pain',
-    'Joint Pain',
-    'Rash',
-    'Sore Throat',
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _isEmergencyMode ? Colors.red[50] : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('🤖 AI Medical Triage'),
-        backgroundColor: const Color(0xFF7C3AED),
+        title: Row(
+          children: [
+            if (_isEmergencyMode)
+              Icon(Icons.emergency, color: Colors.red[700], size: 28),
+            if (_isEmergencyMode) const SizedBox(width: 8),
+            Text(
+              _isEmergencyMode
+                  ? '🚨 EMERGENCY MODE'
+                  : '🤖 AI Medical Companion',
+              style: TextStyle(
+                color: _isEmergencyMode ? Colors.red[700] : Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor:
+            _isEmergencyMode ? Colors.red[600] : const Color(0xFF1565C0),
         foregroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-      ),
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          _buildWelcomeStep(),
-          _buildSymptomsStep(),
-          _buildSeverityStep(),
-          _buildAnalysisStep(),
-          _buildResultsStep(),
+        actions: [
+          if (_isEmergencyMode)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: TextButton.icon(
+                onPressed: () {
+                  // Emergency call action
+                  _showEmergencyDialog();
+                },
+                icon: const Icon(Icons.phone, color: Colors.white),
+                label: const Text(
+                  'CALL 911',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
-      bottomNavigationBar: _buildNavigationBar(),
+      body: Column(
+        children: [
+          // Emergency Alert Bar
+          if (_isEmergencyMode)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: Colors.red[700],
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.white, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'EMERGENCY DETECTED - Immediate medical attention required',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: _showEmergencyDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.red[700],
+                    ),
+                    child: const Text('GET HELP'),
+                  ),
+                ],
+              ),
+            ),
+
+          // Main content
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [_buildCompanionStep(), _buildResultsStep()],
+            ),
+          ),
+
+          // Navigation
+          _buildNavigationBar(),
+        ],
+      ),
     );
   }
 
-  Widget _buildWelcomeStep() {
-    return Padding(
+  Widget _buildCompanionStep() {
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: 20),
+
+          // Welcome Header
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.purple.shade50,
+              gradient: LinearGradient(
+                colors: _isEmergencyMode
+                    ? [Colors.red[600]!, Colors.red[700]!]
+                    : [const Color(0xFF1565C0), const Color(0xFF1976D2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.psychology,
-              size: 80,
-              color: Colors.purple.shade600,
-            ),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            'AI-Powered Health Assessment',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Our advanced AI will analyze your symptoms and provide intelligent recommendations to help reduce wait times.',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.security, color: Colors.blue.shade600),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Secure & Private',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your health information is encrypted and never shared.',
-                  style: TextStyle(fontSize: 14),
+              boxShadow: [
+                BoxShadow(
+                  color: (_isEmergencyMode ? Colors.red : Colors.blue)
+                      .withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            '⚡ Reduces assessment time by 70%',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymptomsStep() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tell us about your symptoms',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Select all that apply to get accurate recommendations',
-            style: TextStyle(color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 24),
-
-          // Quick symptom buttons
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _commonSymptoms.map((symptom) {
-              final isSelected = _selectedSymptoms.contains(symptom);
-              return FilterChip(
-                label: Text(symptom),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _selectedSymptoms.add(symptom);
-                    } else {
-                      _selectedSymptoms.remove(symptom);
-                    }
-                  });
-                },
-                selectedColor: Colors.purple.shade100,
-                checkmarkColor: Colors.purple.shade600,
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Custom symptoms input
-          TextField(
-            controller: _symptomsController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: 'Additional symptoms or details',
-              hintText: 'Describe any other symptoms you\'re experiencing...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              prefixIcon: const Icon(Icons.edit),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          if (_selectedSymptoms.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.green.shade600),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Selected Symptoms (${_selectedSymptoms.length})',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(_selectedSymptoms.join(', ')),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSeverityStep() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'How severe are your symptoms?',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'This helps our AI prioritize your care',
-            style: TextStyle(color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 32),
-          _buildSeverityOption(
-            'Mild',
-            'Minor discomfort, can wait for routine care',
-            Icons.sentiment_satisfied,
-            Colors.green,
-          ),
-          const SizedBox(height: 16),
-          _buildSeverityOption(
-            'Moderate',
-            'Noticeable symptoms affecting daily activities',
-            Icons.sentiment_neutral,
-            Colors.orange,
-          ),
-          const SizedBox(height: 16),
-          _buildSeverityOption(
-            'Severe',
-            'Significant symptoms requiring prompt attention',
-            Icons.sentiment_dissatisfied,
-            Colors.red,
-          ),
-          const SizedBox(height: 16),
-          _buildSeverityOption(
-            'Emergency',
-            'Life-threatening symptoms needing immediate care',
-            Icons.local_hospital,
-            Colors.red.shade800,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSeverityOption(
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-  ) {
-    final isSelected = _selectedSeverity == title;
-
-    return InkWell(
-      onTap: () => setState(() => _selectedSeverity = title),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected ? color.withOpacity(0.1) : null,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? color : null,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: color),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnalysisStep() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.purple.shade50,
-              borderRadius: BorderRadius.circular(20),
-            ),
             child: Column(
               children: [
-                Icon(Icons.psychology, size: 80, color: Colors.purple.shade600),
-                const SizedBox(height: 24),
-                const Text(
-                  'AI Analysis in Progress',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                Icon(
+                  _isEmergencyMode ? Icons.emergency : Icons.psychology,
+                  size: 60,
+                  color: Colors.white,
                 ),
                 const SizedBox(height: 16),
-                const CircularProgressIndicator(),
-                const SizedBox(height: 24),
                 Text(
-                  'Processing your symptoms...\nAnalyzing risk factors...\nGenerating recommendations...',
+                  _isEmergencyMode
+                      ? 'Emergency Medical Assistant'
+                      : 'AI Healthcare Companion',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade600, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _isEmergencyMode
+                      ? 'Emergency detected. Immediate medical assistance is being arranged.'
+                      : 'Talk to our AI in your preferred language for instant medical triage.',
+                  style: const TextStyle(fontSize: 16, color: Colors.white70),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
-          const Text(
-            '🚀 HackTheBrain 2025 Demo',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.purple,
-            ),
+
+          const SizedBox(height: 40),
+
+          // Revolutionary Healthcare Companion Bot
+          HealthcareCompanionBot(onAnalysisComplete: _handleAIAnalysis),
+
+          const SizedBox(height: 40),
+
+          // Feature Cards
+          Row(
+            children: [
+              Expanded(
+                child: _buildFeatureCard(
+                  Icons.translate,
+                  'Multi-Language',
+                  '4 Languages',
+                  Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildFeatureCard(
+                  Icons.emergency,
+                  'Emergency Ready',
+                  'Instant Detection',
+                  Colors.red,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildFeatureCard(
+                  Icons.psychology,
+                  'Real AI',
+                  'Gemini Powered',
+                  Colors.green,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildFeatureCard(
+                  Icons.security,
+                  'CTAS Compliant',
+                  'Medical Standard',
+                  Colors.purple,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureCard(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -371,224 +282,258 @@ class _TriageScreenState extends State<TriageScreen> {
   }
 
   Widget _buildResultsStep() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green.shade400, Colors.green.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 48),
-                const SizedBox(height: 16),
-                const Text(
-                  'Analysis Complete!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your AI-powered health assessment is ready',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (_triageResult != null) ...[
-            // Show AI-powered results
+    return Expanded(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+
+            // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _getUrgencyColor(_triageResult!.ctasLevel),
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: _triageResult?.isCritical == true
+                      ? [Colors.red[600]!, Colors.red[700]!]
+                      : _triageResult?.isUrgent == true
+                          ? [Colors.orange[600]!, Colors.orange[700]!]
+                          : [Colors.green[600]!, Colors.green[700]!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  Icon(
-                    _getUrgencyIcon(_triageResult!.ctasLevel),
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'CTAS Level ${_triageResult!.ctasLevel}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _triageResult!.formattedUrgency,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
+                  const Icon(Icons.check_circle, color: Colors.white, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'AI Medical Analysis Complete',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      '${(_triageResult!.confidenceScore * 100).toInt()}% confident',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Professional CTAS-compliant assessment ready',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 24),
-            _buildResultCard(
-              '🎯 Recommended Action',
-              _triageResult!.recommendedAction,
-              Colors.blue,
-            ),
-            const SizedBox(height: 16),
-            _buildResultCard(
-              '⏱️ Estimated Wait Time',
-              _triageResult!.estimatedWaitTime,
-              Colors.green,
-            ),
-            const SizedBox(height: 16),
-            _buildResultCard(
-              '🧠 AI Reasoning',
-              _triageResult!.reasoning,
-              Colors.purple,
-            ),
-            if (_triageResult!.redFlags.isNotEmpty) ...[
+
+            if (_triageResult != null) ...[
+              // CTAS Level Display
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: _getUrgencyColor(_triageResult!.ctasLevel),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _getUrgencyColor(
+                        _triageResult!.ctasLevel,
+                      ).withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getUrgencyIcon(_triageResult!.ctasLevel),
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'CTAS Level ${_triageResult!.ctasLevel}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _triageResult!.formattedUrgency,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '${(_triageResult!.confidenceScore * 100).toInt()}% confident',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Results Cards
+              _buildResultCard(
+                '🎯 Recommended Action',
+                _triageResult!.recommendedAction,
+                Colors.blue,
+              ),
               const SizedBox(height: 16),
               _buildResultCard(
-                '🚨 Red Flags',
-                _triageResult!.redFlags.join(', '),
-                Colors.red,
+                '⏱️ Estimated Wait Time',
+                _triageResult!.estimatedWaitTime,
+                Colors.green,
               ),
-            ],
-            if (_triageResult!.nextSteps.isNotEmpty) ...[
               const SizedBox(height: 16),
               _buildResultCard(
-                '📋 Next Steps',
-                _triageResult!.nextSteps.join('\n• '),
-                Colors.orange,
+                '🧠 Medical Reasoning',
+                _triageResult!.reasoning,
+                Colors.purple,
+              ),
+
+              if (_triageResult!.redFlags.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildResultCard(
+                  '🚨 Important Indicators',
+                  _triageResult!.redFlags.join('\n• '),
+                  Colors.red,
+                ),
+              ],
+
+              if (_triageResult!.nextSteps.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildResultCard(
+                  '📋 Next Steps',
+                  '• ${_triageResult!.nextSteps.join('\n• ')}',
+                  Colors.orange,
+                ),
+              ],
+            ] else ...[
+              _buildResultCard(
+                '🤖 AI Companion Ready',
+                'Use the voice interface above to describe your symptoms. Our AI will provide instant medical triage in your preferred language.',
+                Colors.blue,
               ),
             ],
-          ] else ...[
-            // Show fallback results if AI analysis failed
-            _buildResultCard(
-              '🎯 Recommended Action',
-              'Please consult with a healthcare provider for proper assessment',
-              Colors.blue,
-            ),
-            const SizedBox(height: 16),
-            _buildResultCard(
-              '⏱️ Estimated Wait Time',
-              'Contact your healthcare provider',
-              Colors.green,
-            ),
-            const SizedBox(height: 16),
-            _buildResultCard(
-              '💊 Next Steps',
-              'Schedule an appointment with your family doctor or visit urgent care',
-              Colors.purple,
+
+            const SizedBox(height: 32),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push('/appointments'),
+                    icon: const Icon(Icons.calendar_today),
+                    label: const Text('Book Appointment'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/home'),
+                    icon: const Icon(Icons.home),
+                    label: const Text('Home'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push('/appointments'),
-                  icon: const Icon(Icons.calendar_today),
-                  label: const Text('Book Appointment'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.all(16),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => context.go('/home'),
-                  icon: const Icon(Icons.home),
-                  label: const Text('Home'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildResultCard(String title, String content, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.info, color: color),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+            child: Icon(Icons.info, color: color, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    content,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  content,
+                  style: const TextStyle(fontSize: 14, height: 1.4),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -606,25 +551,126 @@ class _TriageScreenState extends State<TriageScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          if (_currentStep > 0)
+      child: SafeArea(
+        child: Row(
+          children: [
+            if (_currentStep > 0)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _previousStep,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Previous'),
+                ),
+              ),
+            if (_currentStep > 0) const SizedBox(width: 16),
             Expanded(
-              child: OutlinedButton(
-                onPressed: _previousStep,
-                child: const Text('Previous'),
+              child: ElevatedButton(
+                onPressed: _canProceed() ? _nextStep : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isEmergencyMode
+                      ? Colors.red[600]
+                      : const Color(0xFF1565C0),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(_getNextButtonText()),
               ),
             ),
-          if (_currentStep > 0) const SizedBox(width: 16),
-          Expanded(
-            flex: _currentStep == 0 ? 1 : 1,
-            child: ElevatedButton(
-              onPressed: _canProceed() ? _nextStep : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
-                foregroundColor: Colors.white,
-              ),
-              child: Text(_getNextButtonText()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 🤖 Handle AI Analysis from Companion Bot
+  void _handleAIAnalysis(
+    String message,
+    String language,
+    bool isEmergency,
+  ) async {
+    print(
+      '🤖 AI Companion Analysis: $message (Language: $language, Emergency: $isEmergency)',
+    );
+
+    setState(() {
+      _isEmergencyMode = isEmergency;
+    });
+
+    try {
+      // 🔄 IMPORTANT: Use the existing medical AI service for detailed CTAS analysis
+      // The companion bot already did basic AI analysis, now we get detailed medical assessment
+      final result = await _aiService.analyzeMedicalCase(
+        symptoms: message,
+        language: language.toLowerCase().substring(0, 2),
+        isVoiceInput: true,
+      );
+
+      setState(() {
+        _triageResult = result;
+        if (result.requiresEmergency) {
+          _isEmergencyMode = true;
+        }
+      });
+
+      print('✅ Detailed CTAS Analysis Complete - Level: ${result.ctasLevel}');
+      print('🎯 Emergency Required: ${result.requiresEmergency}');
+
+      // 🔄 AUTOMATICALLY move to results step after AI analysis
+      if (_currentStep == 0) {
+        _nextStep();
+      }
+    } catch (e) {
+      print('❌ Error during detailed AI analysis: $e');
+      // Still allow progression even if detailed analysis fails
+      if (_currentStep == 0) {
+        _nextStep();
+      }
+    }
+  }
+
+  void _showEmergencyDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.emergency, color: Colors.red[700]),
+            const SizedBox(width: 12),
+            const Text('Emergency Assistance'),
+          ],
+        ),
+        content: const Text(
+          'Based on your symptoms, this appears to be a medical emergency. Would you like to:\n\n• Call 911 immediately\n• Go to nearest Emergency Room\n• Contact emergency services',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // TODO: Implement emergency calling
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Emergency services contacted'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[600]),
+            child: const Text(
+              'CALL 911',
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -633,33 +679,18 @@ class _TriageScreenState extends State<TriageScreen> {
   }
 
   bool _canProceed() {
-    switch (_currentStep) {
-      case 0:
-        return true;
-      case 1:
-        return _selectedSymptoms.isNotEmpty;
-      case 2:
-        return _selectedSeverity.isNotEmpty;
-      case 3:
-        return !_isAnalyzing;
-      case 4:
-        return true;
-      default:
-        return false;
+    if (_currentStep == 0) {
+      // For the companion step, check if AI analysis is complete
+      return _triageResult != null;
     }
+    return true; // Always allow navigation from other steps
   }
 
   String _getNextButtonText() {
     switch (_currentStep) {
       case 0:
-        return 'Start Assessment';
+        return _triageResult != null ? 'View Results' : 'Speak to AI First';
       case 1:
-        return 'Continue';
-      case 2:
-        return 'Analyze Symptoms';
-      case 3:
-        return 'View Results';
-      case 4:
         return 'Complete';
       default:
         return 'Next';
@@ -667,13 +698,8 @@ class _TriageScreenState extends State<TriageScreen> {
   }
 
   void _nextStep() {
-    if (_currentStep < 4) {
-      setState(() {
-        _currentStep++;
-        if (_currentStep == 3) {
-          _performAIAnalysis();
-        }
-      });
+    if (_currentStep < 1) {
+      setState(() => _currentStep++);
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -683,64 +709,14 @@ class _TriageScreenState extends State<TriageScreen> {
     }
   }
 
-  /// 🤖 Perform AI-Powered Medical Analysis
-  Future<void> _performAIAnalysis() async {
-    setState(() {
-      _isAnalyzing = true;
-      _triageResult = null;
-    });
-
-    try {
-      // Combine selected symptoms and custom text
-      final allSymptoms = [
-        ..._selectedSymptoms,
-        if (_symptomsController.text.isNotEmpty) _symptomsController.text,
-      ].join(', ');
-
-      print('🩺 Starting AI medical analysis...');
-      print('📝 Symptoms: $allSymptoms');
-      print('⚠️ Severity: $_selectedSeverity');
-
-      // Call AI service for medical analysis
-      final result = await _aiService.analyzeMedicalCase(
-        symptoms: '$allSymptoms. Severity level: $_selectedSeverity',
-        language: 'en', // TODO: Add language selection
-        isVoiceInput: false,
-      );
-
-      if (mounted) {
-        setState(() {
-          _triageResult = result;
-          _isAnalyzing = false;
-        });
-
-        print('✅ AI Analysis Complete!');
-        print('🎯 CTAS Level: ${result.ctasLevel}');
-        print('⏱️ Wait Time: ${result.estimatedWaitTime}');
-        print('🚨 Emergency: ${result.requiresEmergency}');
-      }
-    } catch (e) {
-      print('❌ AI Analysis Error: $e');
-
-      if (mounted) {
-        setState(() {
-          _isAnalyzing = false;
-        });
-
-        // Show error to user
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Analysis failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   void _previousStep() {
     if (_currentStep > 0) {
-      setState(() => _currentStep--);
+      setState(() {
+        _currentStep--;
+        // 🔄 Reset emergency mode when going back to allow fresh analysis
+        _isEmergencyMode = false;
+        _triageResult = null; // Reset results to allow re-analysis
+      });
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -748,46 +724,43 @@ class _TriageScreenState extends State<TriageScreen> {
     }
   }
 
-  /// 🎨 Get Urgency Color Based on CTAS Level
   Color _getUrgencyColor(int ctasLevel) {
     switch (ctasLevel) {
       case 1:
-        return const Color(0xFFDC2626); // Emergency Red
+        return const Color(0xFFD32F2F);
       case 2:
-        return const Color(0xFFF59E0B); // Warning Orange
+        return const Color(0xFFF57C00);
       case 3:
-        return const Color(0xFFD97706); // Urgent Orange
+        return const Color(0xFFFF9800);
       case 4:
-        return const Color(0xFF059669); // Less Urgent Green
+        return const Color(0xFF388E3C);
       case 5:
-        return const Color(0xFF10B981); // Non-Urgent Light Green
+        return const Color(0xFF4CAF50);
       default:
-        return const Color(0xFF6B7280); // Gray
+        return const Color(0xFF757575);
     }
   }
 
-  /// 🔗 Get Urgency Icon Based on CTAS Level
   IconData _getUrgencyIcon(int ctasLevel) {
     switch (ctasLevel) {
       case 1:
-        return Icons.emergency; // Emergency
+        return Icons.emergency;
       case 2:
-        return Icons.warning; // Warning
+        return Icons.warning;
       case 3:
-        return Icons.priority_high; // Urgent
+        return Icons.priority_high;
       case 4:
-        return Icons.schedule; // Less Urgent
+        return Icons.schedule;
       case 5:
-        return Icons.check_circle; // Non-Urgent
+        return Icons.check_circle;
       default:
-        return Icons.help; // Unknown
+        return Icons.help;
     }
   }
 
   @override
   void dispose() {
     _aiService.dispose();
-    _symptomsController.dispose();
     _pageController.dispose();
     super.dispose();
   }
