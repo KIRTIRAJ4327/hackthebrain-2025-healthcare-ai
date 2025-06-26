@@ -42,15 +42,13 @@ class _HealthcareCompanionBotState extends State<HealthcareCompanionBot>
   bool _analysisComplete = false;
 
   // Medical History & Vital Signs
-  List<String> _symptomHistory = [];
-  Map<String, dynamic> _vitalSigns = {};
+  final List<String> _symptomHistory = [];
   bool _showMedicalHistory = false;
   int _painLevel = 0;
   String _symptomDuration = '';
 
   // REAL API Keys from your env.txt
   String get _geminiApiKey => dotenv.env['GOOGLE_GEMINI_API_KEY'] ?? '';
-  String get _translateApiKey => dotenv.env['GOOGLE_TRANSLATE_API_KEY'] ?? '';
 
   // Toronto Language Config - Competition Ready 🏆
   final Map<String, Map<String, dynamic>> _torontoConfig = {
@@ -451,12 +449,17 @@ Analyze the patient's symptoms now and respond professionally in $_currentLangua
         if (data['candidates'] != null && data['candidates'].isNotEmpty) {
           final aiText = data['candidates'][0]['content']['parts'][0]['text'];
 
-          // Use Gemini's intelligent emergency detection + pain level intelligence
+          // 🧠 INTELLIGENT EMERGENCY DETECTION - Trust Gemini AI over keywords
+          // Only use keywords as absolute emergency backup, trust Gemini's medical reasoning
           bool isEmergency = aiText.toUpperCase().startsWith('EMERGENCY:') ||
               aiText.toLowerCase().contains('emergency') ||
               aiText.contains('🚨') ||
-              _detectEmergencyKeywords(userInput) || // Fallback to keywords
-              (_painLevel >= 8); // High pain level indicates emergency
+              (_painLevel >= 9) || // Only extreme pain (9+) overrides AI
+              (aiText.toLowerCase().contains('ctas level 1') ||
+                  aiText.toLowerCase().contains('ctas 1') ||
+                  aiText
+                      .toLowerCase()
+                      .contains('resuscitation')); // Trust medical AI reasoning
 
           print('✅ AI Analysis Complete');
           print('🎯 Emergency Detected by AI: $isEmergency');
@@ -468,7 +471,7 @@ Analyze the patient's symptoms now and respond professionally in $_currentLangua
           setState(() {
             _aiResponse = isEmergency
                 ? _torontoConfig[_currentLanguage]!['emergency']
-                : _torontoConfig[_currentLanguage]!['complete'];
+                : '✅ Analysis complete! I\'ve reviewed your symptoms and provided a detailed medical assessment. Please check the results below for my reasoning and recommendations.';
             _isProcessing = false;
             _isEmergencyDetected = isEmergency;
             _analysisComplete = true;
@@ -480,6 +483,7 @@ Analyze the patient's symptoms now and respond professionally in $_currentLangua
 
           // 🔄 CRITICAL: Call the parent widget to trigger analysis flow
           print('🔄 Triggering parent analysis callback...');
+          print('📋 Full AI Response for debugging: $aiText');
           widget.onAnalysisComplete?.call(userInput, languageCode, isEmergency);
         } else {
           _setFallbackResponse('No AI response received');

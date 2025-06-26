@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 
 /// Home Dashboard Screen for Healthcare AI App
 class HomeScreen extends StatelessWidget {
@@ -380,48 +379,72 @@ class HomeScreen extends StatelessWidget {
   }
 
   void _testFirebaseConnection(BuildContext context) {
-    final app = Firebase.app();
-    final projectId = app.options.projectId;
-    final isConnected = app.name == '[DEFAULT]';
+    try {
+      final app = Firebase.app();
+      final projectId = app.options.projectId;
+      final isConnected = app.name == '[DEFAULT]';
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              isConnected ? Icons.cloud_done : Icons.cloud_off,
-              color: isConnected ? Colors.green : Colors.red,
-            ),
-            const SizedBox(width: 8),
-            const Text('Firebase Status'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '🔗 Connection: ${isConnected ? 'Connected' : 'Disconnected'}',
-            ),
-            const SizedBox(height: 8),
-            Text('📊 Project ID: $projectId'),
-            const SizedBox(height: 8),
-            Text('🌐 Database URL: ${app.options.databaseURL}'),
-            const SizedBox(height: 8),
-            Text('🔐 Auth Domain: ${app.options.authDomain}'),
-            const SizedBox(height: 8),
-            const Text('✅ Ready for AI integration with Gemini API'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                isConnected ? Icons.cloud_done : Icons.cloud_off,
+                color: isConnected ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 8),
+              const Text('Firebase Status'),
+            ],
           ),
-        ],
-      ),
-    );
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '🔗 Connection: ${isConnected ? 'Connected' : 'Disconnected'}',
+              ),
+              const SizedBox(height: 8),
+              Text('📊 Project ID: $projectId'),
+              const SizedBox(height: 8),
+              Text(
+                  '🌐 Database URL: ${app.options.databaseURL ?? 'Not configured'}'),
+              const SizedBox(height: 8),
+              Text(
+                  '🔐 Auth Domain: ${app.options.authDomain ?? 'Not configured'}'),
+              const SizedBox(height: 8),
+              const Text('✅ Ready for AI integration with Gemini API'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Firebase Status'),
+            ],
+          ),
+          content: Text('Firebase connection error: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _testRealTimeData(BuildContext context) {
@@ -512,9 +535,7 @@ class _FirebaseRealTimeDemo extends StatefulWidget {
 
 class _FirebaseRealTimeDemoState extends State<_FirebaseRealTimeDemo> {
   int _counter = 0;
-  bool _isLoading = false;
-  String _status = "Firebase Backend Demo";
-  List<String> _logs = [];
+  final List<String> _logs = [];
 
   @override
   void initState() {

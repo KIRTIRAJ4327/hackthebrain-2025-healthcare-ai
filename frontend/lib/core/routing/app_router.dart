@@ -7,28 +7,37 @@ import '../../features/home/screens/home_screen.dart';
 import '../../features/triage/screens/triage_screen.dart';
 import '../../features/appointments/screens/appointments_screen.dart';
 import '../../features/providers/screens/providers_screen.dart';
+import '../../features/providers/screens/gta_map_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/dashboard/screens/healthcare_coordination_dashboard.dart';
 import '../../features/emergency/screens/emergency_screen.dart';
 import '../../shared/screens/splash_screen.dart';
 import '../../shared/screens/not_found_screen.dart';
-import '../providers/auth_provider.dart';
 
 /// 🏥 Healthcare AI App Router
 /// Handles navigation and route protection for the medical application
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
-
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/home',
     debugLogDiagnostics: true,
 
     // Redirect logic for authentication - DEMO MODE: Skip auth for hackathon
     redirect: (context, state) {
       // Skip authentication for demo - allow all routes
+      // But redirect root to home
+      if (state.uri.path == '/') {
+        return '/home';
+      }
       return null;
     },
 
     routes: [
+      // Root redirect
+      GoRoute(
+        path: '/',
+        redirect: (context, state) => '/home',
+      ),
+
       // Splash Screen
       GoRoute(
         path: '/splash',
@@ -146,6 +155,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
+          // 🗺️ GTA Healthcare Coordination Map
+          GoRoute(
+            path: '/gta-map',
+            name: 'gta-map',
+            builder: (context, state) {
+              return const GTAMapScreen();
+            },
+          ),
+
+          // 🏆 Healthcare Coordination Dashboard (Competition Demo)
+          GoRoute(
+            path: '/dashboard',
+            name: 'dashboard',
+            builder: (context, state) =>
+                const HealthcareCoordinationDashboard(),
+          ),
+
           // User Profile
           GoRoute(
             path: '/profile',
@@ -212,7 +238,7 @@ class HealthcareBottomNavigation extends StatelessWidget {
       if (location.startsWith('/home')) return 0;
       if (location.startsWith('/triage')) return 1;
       if (location.startsWith('/appointments')) return 2;
-      if (location.startsWith('/providers')) return 3;
+      if (location.startsWith('/dashboard')) return 3;
       if (location.startsWith('/profile')) return 4;
       return 0;
     }
@@ -234,7 +260,7 @@ class HealthcareBottomNavigation extends StatelessWidget {
             context.go('/appointments');
             break;
           case 3:
-            context.go('/providers');
+            context.go('/dashboard');
             break;
           case 4:
             context.go('/profile');
@@ -258,9 +284,9 @@ class HealthcareBottomNavigation extends StatelessWidget {
           label: 'Appointments',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.local_hospital_outlined),
-          activeIcon: Icon(Icons.local_hospital),
-          label: 'Providers',
+          icon: Icon(Icons.dashboard_outlined),
+          activeIcon: Icon(Icons.dashboard),
+          label: 'Demo',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),

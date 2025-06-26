@@ -12,9 +12,9 @@ void main() async {
   // Load environment variables
   try {
     await dotenv.load(fileName: ".env");
-    print('✅ Environment variables loaded');
+    print('✅ Environment variables loaded successfully');
   } catch (e) {
-    print('⚠️ Warning: .env file not found, using default values');
+    print('❌ Error loading .env file: $e');
   }
 
   // Initialize Firebase

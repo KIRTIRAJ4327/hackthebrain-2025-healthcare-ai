@@ -61,6 +61,25 @@ dependencies:
   # Healthcare Companion Bot - COMPETITION WINNER FEATURES
   lottie: ^3.1.2
   animations: ^2.0.11
+  
+  # GTA Healthcare Coordination System - REAL AI INTEGRATION
+  google_generative_ai: ^0.2.0
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+  location: ^5.0.3
+  
+  # Enhanced Data and Utilities
+  shared_preferences: ^2.2.2
+  
+  # Networking and API
+  dio: ^5.4.0
+  
+  # UI Components
+  flutter_svg: ^2.0.9
+  flutter_animate: ^4.5.0
+  
+  # Voice Recognition
   speech_to_text: ^7.0.0
 
 dev_dependencies:

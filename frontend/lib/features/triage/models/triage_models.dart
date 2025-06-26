@@ -17,6 +17,13 @@ class TriageResult {
   final List<String> redFlags;
   final List<String> nextSteps;
 
+  // 🗺️ Location-based facility recommendation fields (optional)
+  final String? recommendedFacility;
+  final String? facilityType;
+  final String? trafficReductionMessage;
+  final double? facilityDistance;
+  final String? facilityTravelTime;
+
   TriageResult({
     required this.sessionId,
     required this.ctasLevel,
@@ -30,6 +37,12 @@ class TriageResult {
     required this.analysisTimestamp,
     required this.redFlags,
     required this.nextSteps,
+    // Optional location-based fields
+    this.recommendedFacility,
+    this.facilityType,
+    this.trafficReductionMessage,
+    this.facilityDistance,
+    this.facilityTravelTime,
   });
 
   /// 🚨 Create Safety Fallback Result
@@ -64,6 +77,47 @@ class TriageResult {
         'Do not delay treatment',
         'Call 911 if symptoms worsen',
       ],
+    );
+  }
+
+  /// 🚨 Create location-aware TriageResult with facility recommendation
+  factory TriageResult.withLocationData({
+    required String sessionId,
+    required int ctasLevel,
+    required String urgencyDescription,
+    required String reasoning,
+    required String recommendedAction,
+    required double confidenceScore,
+    required String estimatedWaitTime,
+    required bool requiresEmergency,
+    required String language,
+    required DateTime analysisTimestamp,
+    required List<String> redFlags,
+    required List<String> nextSteps,
+    String? recommendedFacility,
+    String? facilityType,
+    String? trafficReductionMessage,
+    double? facilityDistance,
+    String? facilityTravelTime,
+  }) {
+    return TriageResult(
+      sessionId: sessionId,
+      ctasLevel: ctasLevel,
+      urgencyDescription: urgencyDescription,
+      reasoning: reasoning,
+      recommendedAction: recommendedAction,
+      confidenceScore: confidenceScore,
+      estimatedWaitTime: estimatedWaitTime,
+      requiresEmergency: requiresEmergency,
+      language: language,
+      analysisTimestamp: analysisTimestamp,
+      redFlags: redFlags,
+      nextSteps: nextSteps,
+      recommendedFacility: recommendedFacility,
+      facilityType: facilityType,
+      trafficReductionMessage: trafficReductionMessage,
+      facilityDistance: facilityDistance,
+      facilityTravelTime: facilityTravelTime,
     );
   }
 
@@ -142,6 +196,11 @@ class TriageResult {
       'analysisTimestamp': analysisTimestamp.toIso8601String(),
       'redFlags': redFlags,
       'nextSteps': nextSteps,
+      'recommendedFacility': recommendedFacility,
+      'facilityType': facilityType,
+      'trafficReductionMessage': trafficReductionMessage,
+      'facilityDistance': facilityDistance,
+      'facilityTravelTime': facilityTravelTime,
     };
   }
 
@@ -162,6 +221,11 @@ class TriageResult {
       ),
       redFlags: List<String>.from(map['redFlags'] ?? []),
       nextSteps: List<String>.from(map['nextSteps'] ?? []),
+      recommendedFacility: map['recommendedFacility'],
+      facilityType: map['facilityType'],
+      trafficReductionMessage: map['trafficReductionMessage'],
+      facilityDistance: map['facilityDistance'],
+      facilityTravelTime: map['facilityTravelTime'],
     );
   }
 
