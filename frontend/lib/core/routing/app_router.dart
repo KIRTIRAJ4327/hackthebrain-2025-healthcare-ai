@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/home/screens/home_screen.dart';
@@ -14,30 +15,42 @@ import '../../features/emergency/screens/emergency_screen.dart';
 import '../../shared/screens/splash_screen.dart';
 import '../../shared/screens/not_found_screen.dart';
 
-/// 🏥 Healthcare AI App Router
-/// Handles navigation and route protection for the medical application
+/// 🏥 Healthcare AI App Router with Firebase Authentication
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/splash',
     debugLogDiagnostics: true,
 
-    // Redirect logic for authentication - DEMO MODE: Skip auth for hackathon
+    // 🔐 Authentication-aware redirect logic
     redirect: (context, state) {
-      // Skip authentication for demo - allow all routes
-      // But redirect root to home
-      if (state.uri.path == '/') {
-        return '/home';
+      final authState = ref.read(authStateProvider);
+      final isGoingToAuth = state.uri.path.startsWith('/auth');
+      final isGoingToEmergency = state.uri.path == '/emergency';
+
+      // Allow emergency access without authentication
+      if (isGoingToEmergency) return null;
+
+      // Handle authentication states
+      if (authState is AuthLoading) {
+        return '/splash';
+      } else if (authState is AuthUnauthenticated) {
+        return isGoingToAuth ? null : '/auth/login';
+      } else if (authState is AuthAuthenticated) {
+        // If authenticated and going to auth pages, redirect to home
+        if (isGoingToAuth || state.uri.path == '/splash') {
+          return '/home';
+        }
       }
+
+      // Redirect root to appropriate location
+      if (state.uri.path == '/') {
+        return authState is AuthAuthenticated ? '/home' : '/auth/login';
+      }
+
       return null;
     },
 
     routes: [
-      // Root redirect
-      GoRoute(
-        path: '/',
-        redirect: (context, state) => '/home',
-      ),
-
       // Splash Screen
       GoRoute(
         path: '/splash',
@@ -46,11 +59,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // Authentication Routes
-      GoRoute(
-        path: '/auth',
-        redirect: (context, state) => '/auth/login',
-      ),
-
       GoRoute(
         path: '/auth/login',
         name: 'login',
@@ -81,15 +89,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/home',
             name: 'home',
             builder: (context, state) => const HomeScreen(),
-            routes: [
-              // Quick Triage from Home
-              GoRoute(
-                path: 'quick-triage',
-                name: 'quick-triage',
-                builder: (context, state) =>
-                    const TriageScreen(isQuickAccess: true),
-              ),
-            ],
           ),
 
           // Medical Triage System
@@ -97,16 +96,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/triage',
             name: 'triage',
             builder: (context, state) => const TriageScreen(),
-            routes: [
-              GoRoute(
-                path: 'result/:sessionId',
-                name: 'triage-result',
-                builder: (context, state) {
-                  final sessionId = state.pathParameters['sessionId']!;
-                  return TriageResultScreen(sessionId: sessionId);
-                },
-              ),
-            ],
           ),
 
           // Appointments Management
@@ -114,28 +103,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/appointments',
             name: 'appointments',
             builder: (context, state) => const AppointmentsScreen(),
-            routes: [
-              GoRoute(
-                path: 'book',
-                name: 'book-appointment',
-                builder: (context, state) {
-                  final providerId = state.uri.queryParameters['providerId'];
-                  final specialty = state.uri.queryParameters['specialty'];
-                  return BookAppointmentScreen(
-                    providerId: providerId,
-                    specialty: specialty,
-                  );
-                },
-              ),
-              GoRoute(
-                path: ':appointmentId',
-                name: 'appointment-details',
-                builder: (context, state) {
-                  final appointmentId = state.pathParameters['appointmentId']!;
-                  return AppointmentDetailsScreen(appointmentId: appointmentId);
-                },
-              ),
-            ],
           ),
 
           // Healthcare Providers
@@ -143,25 +110,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/providers',
             name: 'providers',
             builder: (context, state) => const ProvidersScreen(),
-            routes: [
-              GoRoute(
-                path: ':providerId',
-                name: 'provider-details',
-                builder: (context, state) {
-                  final providerId = state.pathParameters['providerId']!;
-                  return ProviderDetailsScreen(providerId: providerId);
-                },
-              ),
-            ],
           ),
 
           // 🗺️ GTA Healthcare Coordination Map
           GoRoute(
             path: '/gta-map',
             name: 'gta-map',
-            builder: (context, state) {
-              return const GTAMapScreen();
-            },
+            builder: (context, state) => const GTAMapScreen(),
           ),
 
           // 🏆 Healthcare Coordination Dashboard (Competition Demo)
@@ -177,96 +132,54 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/profile',
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
-            routes: [
-              GoRoute(
-                path: 'medical-history',
-                name: 'medical-history',
-                builder: (context, state) => const MedicalHistoryScreen(),
-              ),
-              GoRoute(
-                path: 'settings',
-                name: 'settings',
-                builder: (context, state) => const SettingsScreen(),
-              ),
-            ],
-          ),
-
-          // Analytics Dashboard (for providers)
-          GoRoute(
-            path: '/analytics',
-            name: 'analytics',
-            builder: (context, state) => const AnalyticsScreen(),
           ),
         ],
       ),
+
+      // 404 Not Found
+      GoRoute(
+        path: '/404',
+        name: 'not-found',
+        builder: (context, state) => const NotFoundScreen(),
+      ),
     ],
 
-    // Error handling
-    errorBuilder: (context, state) => NotFoundScreen(
-      error: state.error?.toString() ?? 'Page not found',
-    ),
+    // Handle unknown routes
+    errorBuilder: (context, state) => const NotFoundScreen(),
   );
 });
 
-/// Main Navigation Wrapper with Bottom Navigation
-class MainNavigationWrapper extends StatelessWidget {
+/// 🧭 Main Navigation Wrapper with Firebase User Context
+class MainNavigationWrapper extends ConsumerWidget {
   final Widget child;
 
-  const MainNavigationWrapper({
-    super.key,
-    required this.child,
-  });
+  const MainNavigationWrapper({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+
     return Scaffold(
-      body: child,
-      bottomNavigationBar: const HealthcareBottomNavigation(),
+      body: authState is AuthAuthenticated
+          ? child
+          : const Center(
+              child: CircularProgressIndicator(),
+            ),
+      bottomNavigationBar: authState is AuthAuthenticated
+          ? _buildBottomNavigation(context, ref)
+          : null,
     );
   }
-}
 
-/// Healthcare-themed Bottom Navigation
-class HealthcareBottomNavigation extends StatelessWidget {
-  const HealthcareBottomNavigation({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final location = GoRouterState.of(context).uri.path;
-
-    int getCurrentIndex() {
-      if (location.startsWith('/home')) return 0;
-      if (location.startsWith('/triage')) return 1;
-      if (location.startsWith('/appointments')) return 2;
-      if (location.startsWith('/dashboard')) return 3;
-      if (location.startsWith('/profile')) return 4;
-      return 0;
-    }
+  Widget _buildBottomNavigation(BuildContext context, WidgetRef ref) {
+    final currentLocation = GoRouterState.of(context).uri.path;
 
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF2563EB),
+      selectedItemColor: const Color(0xFF1565C0),
       unselectedItemColor: Colors.grey,
-      currentIndex: getCurrentIndex(),
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/home');
-            break;
-          case 1:
-            context.go('/triage');
-            break;
-          case 2:
-            context.go('/appointments');
-            break;
-          case 3:
-            context.go('/dashboard');
-            break;
-          case 4:
-            context.go('/profile');
-            break;
-        }
-      },
+      currentIndex: _getCurrentIndex(currentLocation),
+      onTap: (index) => _onBottomNavTap(context, index),
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
@@ -274,19 +187,19 @@ class HealthcareBottomNavigation extends StatelessWidget {
           label: 'Home',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.medical_services_outlined),
-          activeIcon: Icon(Icons.medical_services),
-          label: 'AI Triage',
+          icon: Icon(Icons.health_and_safety_outlined),
+          activeIcon: Icon(Icons.health_and_safety),
+          label: 'Triage',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          activeIcon: Icon(Icons.calendar_month),
+          icon: Icon(Icons.calendar_today_outlined),
+          activeIcon: Icon(Icons.calendar_today),
           label: 'Appointments',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard),
-          label: 'Demo',
+          icon: Icon(Icons.local_hospital_outlined),
+          activeIcon: Icon(Icons.local_hospital),
+          label: 'Providers',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
@@ -296,52 +209,123 @@ class HealthcareBottomNavigation extends StatelessWidget {
       ],
     );
   }
+
+  int _getCurrentIndex(String location) {
+    if (location.startsWith('/home')) return 0;
+    if (location.startsWith('/triage')) return 1;
+    if (location.startsWith('/appointments')) return 2;
+    if (location.startsWith('/providers')) return 3;
+    if (location.startsWith('/profile')) return 4;
+    return 0;
+  }
+
+  void _onBottomNavTap(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.go('/home');
+        break;
+      case 1:
+        context.go('/triage');
+        break;
+      case 2:
+        context.go('/appointments');
+        break;
+      case 3:
+        context.go('/providers');
+        break;
+      case 4:
+        context.go('/profile');
+        break;
+    }
+  }
 }
 
-// Placeholder screens - will be implemented in their respective feature folders
+// Placeholder screens for missing implementations
 class TriageResultScreen extends StatelessWidget {
   final String sessionId;
   const TriageResultScreen({super.key, required this.sessionId});
+
   @override
-  Widget build(BuildContext context) => const Placeholder();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Triage Result: $sessionId')),
+      body: const Center(child: Text('Triage result details coming soon')),
+    );
+  }
 }
 
 class BookAppointmentScreen extends StatelessWidget {
   final String? providerId;
   final String? specialty;
   const BookAppointmentScreen({super.key, this.providerId, this.specialty});
+
   @override
-  Widget build(BuildContext context) => const Placeholder();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Book Appointment')),
+      body: const Center(child: Text('Appointment booking coming soon')),
+    );
+  }
 }
 
 class AppointmentDetailsScreen extends StatelessWidget {
   final String appointmentId;
   const AppointmentDetailsScreen({super.key, required this.appointmentId});
+
   @override
-  Widget build(BuildContext context) => const Placeholder();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Appointment: $appointmentId')),
+      body: const Center(child: Text('Appointment details coming soon')),
+    );
+  }
 }
 
 class ProviderDetailsScreen extends StatelessWidget {
   final String providerId;
   const ProviderDetailsScreen({super.key, required this.providerId});
+
   @override
-  Widget build(BuildContext context) => const Placeholder();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Provider: $providerId')),
+      body: const Center(child: Text('Provider details coming soon')),
+    );
+  }
 }
 
 class MedicalHistoryScreen extends StatelessWidget {
   const MedicalHistoryScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const Placeholder();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Medical History')),
+      body: const Center(child: Text('Medical history coming soon')),
+    );
+  }
 }
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const Placeholder();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: const Center(child: Text('Settings coming soon')),
+    );
+  }
 }
 
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => const Placeholder();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Analytics')),
+      body: const Center(child: Text('Analytics dashboard coming soon')),
+    );
+  }
 }
