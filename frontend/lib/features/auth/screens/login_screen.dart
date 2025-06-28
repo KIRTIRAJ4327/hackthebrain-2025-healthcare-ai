@@ -95,6 +95,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                       ),
                       const SizedBox(height: 32),
+
+                      // Error Message Display
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final authState = ref.watch(authStateProvider);
+                          if (authState is AuthError) {
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red[300]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline,
+                                      color: Colors.red[700], size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      authState.message.contains('expired') ||
+                                              authState.message.contains(
+                                                  'invalid-credential') ||
+                                              authState.message
+                                                  .contains('supply auth')
+                                          ? 'Your session has expired or credentials are invalid. Please sign in again.'
+                                          : authState.message,
+                                      style: TextStyle(
+                                        color: Colors.red[700],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      ref
+                                          .read(authStateProvider.notifier)
+                                          .clearError();
+                                    },
+                                    child: const Text('Dismiss'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+
                       Form(
                         key: _formKey,
                         child: Column(
@@ -194,6 +244,89 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         fontWeight: FontWeight.w600)),
                               ),
                             ),
+                            const SizedBox(height: 16),
+
+                            // Google Sign-In Button - Now Working!
+                            Container(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed:
+                                    _isLoading ? null : _handleGoogleSignIn,
+                                icon: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Image.network(
+                                    'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png',
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF4285F4),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: const Center(
+                                          child: Text(
+                                            'G',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                label: const Text(
+                                  'Continue with Google',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1F2937),
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  foregroundColor: const Color(0xFF1F2937),
+                                  side: const BorderSide(
+                                      color: Color(0xFFE5E7EB)),
+                                  backgroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Divider
+                            Row(
+                              children: [
+                                Expanded(
+                                    child: Divider(color: Colors.grey[300])),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  child: Text(
+                                    'OR',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                    child: Divider(color: Colors.grey[300])),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
                           ],
                         ),
                       ),
@@ -271,6 +404,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Text('🚀 Demo credentials loaded! Click Sign In to continue.'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 3)),
+    );
+  }
+
+  void _handleGoogleSignIn() {
+    final authNotifier = ref.read(authStateProvider.notifier);
+    authNotifier.signInWithGoogle();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔐 Signing in with Google...'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 }

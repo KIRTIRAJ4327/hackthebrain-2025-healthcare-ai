@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/services/enhanced_clinic_booking.dart';
 
 class AppointmentsScreen extends StatefulWidget {
@@ -306,24 +307,44 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            // Action buttons for existing appointments
+            // Enhanced action buttons for existing appointments
             Row(
               children: [
-                if (appointment['phone'] != null)
-                  TextButton.icon(
-                    onPressed: () => _callClinic(appointment['phone']),
-                    icon: const Icon(Icons.phone, size: 16),
-                    label: const Text('Call'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF2563EB),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _getDirectionsToAppointment(appointment),
+                    icon: const Icon(Icons.directions, size: 16),
+                    label: const Text('Directions'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                     ),
                   ),
-                TextButton.icon(
-                  onPressed: () => _getDirections(appointment['location']),
-                  icon: const Icon(Icons.directions, size: 16),
-                  label: const Text('Directions'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF2563EB),
+                ),
+                const SizedBox(width: 6),
+                if (appointment['phone'] != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _callAppointmentFacility(appointment),
+                      icon: const Icon(Icons.phone, size: 16),
+                      label: const Text('Call'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF2563EB),
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _rescheduleAppointment(appointment),
+                    icon: const Icon(Icons.schedule, size: 16),
+                    label: const Text('Reschedule'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                    ),
                   ),
                 ),
               ],
@@ -560,8 +581,194 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     }
   }
 
+  // ✅ Enhanced appointment-specific functionality
+  void _getDirectionsToAppointment(Map<String, dynamic> appointment) async {
+    final facilityName = appointment['location'];
+    final address = appointment['address'] ?? appointment['location'];
+
+    // Multiple URL options for better compatibility
+    final googleMapsUrl =
+        'https://maps.google.com/maps?daddr=${Uri.encodeComponent(address)}';
+    final appleMapsUrl =
+        'https://maps.apple.com/?daddr=${Uri.encodeComponent(address)}';
+    final fallbackUrl =
+        'https://www.google.com/maps/search/${Uri.encodeComponent(address)}';
+
+    try {
+      // Try Google Maps first
+      final googleUri = Uri.parse(googleMapsUrl);
+      if (await canLaunchUrl(googleUri)) {
+        await launchUrl(googleUri, mode: LaunchMode.externalApplication);
+        _showMessage('🗺️ Opening directions to $facilityName');
+        return;
+      }
+
+      // Try Apple Maps (iOS/macOS)
+      final appleUri = Uri.parse(appleMapsUrl);
+      if (await canLaunchUrl(appleUri)) {
+        await launchUrl(appleUri, mode: LaunchMode.externalApplication);
+        _showMessage('🗺️ Opening directions to $facilityName');
+        return;
+      }
+
+      // Fallback to address search
+      final fallbackUri = Uri.parse(fallbackUrl);
+      if (await canLaunchUrl(fallbackUri)) {
+        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+        _showMessage('🗺️ Opening map search for $facilityName');
+        return;
+      }
+
+      _showMessage('❌ Could not open maps app');
+    } catch (e) {
+      _showMessage('❌ Error opening directions: $e');
+      print('Maps error: $e');
+    }
+  }
+
+  void _callAppointmentFacility(Map<String, dynamic> appointment) async {
+    final facilityName = appointment['location'];
+    final phoneNumber = appointment['phone'];
+
+    // Clean phone number and create tel: URL
+    String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    if (!cleanPhone.startsWith('+') && cleanPhone.length == 10) {
+      cleanPhone = '+1$cleanPhone'; // Add North American country code
+    }
+
+    final telUrl = 'tel:$cleanPhone';
+
+    try {
+      final uri = Uri.parse(telUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+        _showMessage('📞 Calling $facilityName...');
+      } else {
+        // Fallback: show phone number for manual dialing
+        _showPhoneDialog(facilityName, phoneNumber);
+      }
+    } catch (e) {
+      _showMessage('❌ Error making call: $e');
+      _showPhoneDialog(facilityName, phoneNumber);
+      print('Call error: $e');
+    }
+  }
+
+  void _rescheduleAppointment(Map<String, dynamic> appointment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('📅 Reschedule Appointment'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Current: ${appointment['doctor']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text('Date: ${appointment['date']}'),
+            Text('Location: ${appointment['location']}'),
+            const SizedBox(height: 16),
+            const Text('Choose rescheduling method:'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _callAppointmentFacility(appointment);
+            },
+            icon: const Icon(Icons.phone, size: 16),
+            label: const Text('Call to Reschedule'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _openOnlineRescheduling(appointment);
+            },
+            icon: const Icon(Icons.web, size: 16),
+            label: const Text('Online'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openOnlineRescheduling(Map<String, dynamic> appointment) async {
+    final facilityName = appointment['location'];
+    // Generate a realistic booking URL
+    final bookingUrl =
+        'https://www.${facilityName.toLowerCase().replaceAll(' ', '').replaceAll(RegExp(r'[^a-z0-9]'), '')}.ca/appointments';
+    final fallbackUrl =
+        'https://www.google.com/search?q=${Uri.encodeComponent(facilityName + " reschedule appointment online")}';
+
+    try {
+      final uri = Uri.parse(bookingUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _showMessage('🌐 Opening online rescheduling for $facilityName');
+      } else {
+        // Fallback to Google search
+        final fallbackUri = Uri.parse(fallbackUrl);
+        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+        _showMessage('🔍 Searching for $facilityName online rescheduling');
+      }
+    } catch (e) {
+      _showMessage('❌ Error opening rescheduling page: $e');
+      print('Rescheduling error: $e');
+    }
+  }
+
+  void _showPhoneDialog(String facilityName, String phoneNumber) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('📞 Call $facilityName'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Phone: $phoneNumber'),
+            const SizedBox(height: 8),
+            const Text('Tap the number to copy or dial manually'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Try calling again with the appointment data
+              final appointment = {
+                'location': facilityName,
+                'phone': phoneNumber
+              };
+              _callAppointmentFacility(appointment);
+            },
+            child: const Text('Try Call Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Enhanced clinic booking functionality
   void _showCallDialog(String phoneUrl) {
     final phoneNumber = phoneUrl.replaceFirst('tel:', '');
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -579,15 +786,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // In a real app, this would open the phone dialer
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('📞 Opening dialer for $phoneNumber'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              try {
+                final uri = Uri.parse('tel:$phoneNumber');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                  _showMessage('📞 Calling $phoneNumber...');
+                } else {
+                  _showMessage('❌ Could not open phone dialer');
+                }
+              } catch (e) {
+                _showMessage('❌ Error making call: $e');
+              }
             },
             child: const Text('Call'),
           ),
@@ -614,15 +825,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // In a real app, this would open Google Maps
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🗺️ Opening Google Maps navigation...'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
+              try {
+                final uri = Uri.parse(mapsUrl);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  _showMessage('🗺️ Opening Google Maps navigation...');
+                } else {
+                  _showMessage('❌ Could not open maps app');
+                }
+              } catch (e) {
+                _showMessage('❌ Error opening maps: $e');
+              }
             },
             child: const Text('Navigate'),
           ),
@@ -649,15 +864,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // In a real app, this would open the website
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🌐 Opening clinic website...'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
+              try {
+                final uri = Uri.parse(websiteUrl);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  _showMessage('🌐 Opening clinic website...');
+                } else {
+                  _showMessage('❌ Could not open website');
+                }
+              } catch (e) {
+                _showMessage('❌ Error opening website: $e');
+              }
             },
             child: const Text('Visit Website'),
           ),
@@ -672,6 +891,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
   void _getDirections(String location) {
     _showNavigationDialog('https://www.google.com/maps/search/$location');
+  }
+
+  void _showMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _showBookingDialog() {

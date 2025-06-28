@@ -44,6 +44,7 @@ dependencies:
   firebase_core: ^3.10.0
   firebase_auth: ^5.3.5
   firebase_database: ^11.3.4
+  google_sign_in: ^6.2.1
   
   # AI & Translation Services - REAL INTEGRATION
   http: ^1.2.2
@@ -81,6 +82,9 @@ dependencies:
   
   # Voice Recognition
   speech_to_text: ^7.0.0
+  
+  # URL Launcher for directions and calling
+  url_launcher: ^6.2.2
 
 dev_dependencies:
   flutter_test:

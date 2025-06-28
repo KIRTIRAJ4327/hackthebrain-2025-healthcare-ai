@@ -26,9 +26,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authStateProvider);
       final isGoingToAuth = state.uri.path.startsWith('/auth');
       final isGoingToEmergency = state.uri.path == '/emergency';
+      final isGoingToSplash = state.uri.path == '/splash';
 
       // Allow emergency access without authentication
       if (isGoingToEmergency) return null;
+
+      // Always allow splash screen to show for proper branding
+      if (isGoingToSplash) return null;
 
       // Handle authentication states
       if (authState is AuthLoading) {
@@ -37,14 +41,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isGoingToAuth ? null : '/auth/login';
       } else if (authState is AuthAuthenticated) {
         // If authenticated and going to auth pages, redirect to home
-        if (isGoingToAuth || state.uri.path == '/splash') {
+        if (isGoingToAuth) {
           return '/home';
         }
       }
 
-      // Redirect root to appropriate location
+      // Redirect root to splash for proper initialization
       if (state.uri.path == '/') {
-        return authState is AuthAuthenticated ? '/home' : '/auth/login';
+        return '/splash';
       }
 
       return null;

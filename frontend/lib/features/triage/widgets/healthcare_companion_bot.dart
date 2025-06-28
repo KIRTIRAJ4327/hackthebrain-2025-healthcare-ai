@@ -449,20 +449,50 @@ Analyze the patient's symptoms now and respond professionally in $_currentLangua
         if (data['candidates'] != null && data['candidates'].isNotEmpty) {
           final aiText = data['candidates'][0]['content']['parts'][0]['text'];
 
-          // 🧠 INTELLIGENT EMERGENCY DETECTION - Trust Gemini AI over keywords
-          // Only use keywords as absolute emergency backup, trust Gemini's medical reasoning
-          bool isEmergency = aiText.toUpperCase().startsWith('EMERGENCY:') ||
-              aiText.toLowerCase().contains('emergency') ||
-              aiText.contains('🚨') ||
-              (_painLevel >= 9) || // Only extreme pain (9+) overrides AI
-              (aiText.toLowerCase().contains('ctas level 1') ||
-                  aiText.toLowerCase().contains('ctas 1') ||
-                  aiText
-                      .toLowerCase()
-                      .contains('resuscitation')); // Trust medical AI reasoning
+          // 🧠 INTELLIGENT EMERGENCY DETECTION - Smarter Logic for Headache & Combined Symptoms
+          // Check pain level, duration, and combined symptoms for accurate triage
+          final isCommonNonEmergency = _isCommonNonEmergencySymptom(userInput);
+
+          bool isEmergency = false;
+
+          // Smart headache evaluation - consider severity and combinations
+          if (userInput.toLowerCase().contains('headache')) {
+            // Emergency headache indicators
+            final hasEmergencyHeadacheSymptoms =
+                userInput.toLowerCase().contains('vision') ||
+                    userInput.toLowerCase().contains('severe') ||
+                    userInput.toLowerCase().contains('worst') ||
+                    userInput.toLowerCase().contains('sudden') ||
+                    userInput.toLowerCase().contains('neck stiff') ||
+                    userInput.toLowerCase().contains('confusion') ||
+                    userInput.toLowerCase().contains('fever');
+
+            isEmergency = hasEmergencyHeadacheSymptoms ||
+                (_painLevel >= 8) || // Very high pain
+                aiText.toUpperCase().startsWith('EMERGENCY:') ||
+                (aiText.toLowerCase().contains('ctas level 1') ||
+                    aiText.toLowerCase().contains('ctas 1'));
+          } else if (!isCommonNonEmergency) {
+            // Non-headache symptoms - use original logic
+            isEmergency = aiText.toUpperCase().startsWith('EMERGENCY:') ||
+                aiText.toLowerCase().contains('emergency') ||
+                aiText.contains('🚨') ||
+                (_painLevel >= 9) ||
+                (aiText.toLowerCase().contains('ctas level 1') ||
+                    aiText.toLowerCase().contains('ctas 1') ||
+                    aiText.toLowerCase().contains('resuscitation'));
+          } else {
+            // Other common non-emergency symptoms
+            isEmergency = (_painLevel >= 9) ||
+                aiText.toUpperCase().startsWith('EMERGENCY:') ||
+                (aiText.toLowerCase().contains('ctas level 1') ||
+                    aiText.toLowerCase().contains('ctas 1'));
+          }
 
           print('✅ AI Analysis Complete');
-          print('🎯 Emergency Detected by AI: $isEmergency');
+          print('🎯 Common Non-Emergency: $isCommonNonEmergency');
+          print('🎯 Pain Level: $_painLevel/10');
+          print('🎯 Emergency Detected: $isEmergency');
           print(
               '📄 AI Response: ${aiText.substring(0, aiText.length > 150 ? 150 : aiText.length)}...');
 
@@ -542,6 +572,37 @@ Analyze the patient's symptoms now and respond professionally in $_currentLangua
     final lowerInput = input.toLowerCase();
     return keywords
         .any((keyword) => lowerInput.contains(keyword.toLowerCase()));
+  }
+
+  /// 🏥 Check if symptom is common non-emergency that should go to clinic/walk-in
+  bool _isCommonNonEmergencySymptom(String input) {
+    final nonEmergencySymptoms = [
+      // English
+      'headache', 'mild headache', 'tension headache', 'sore throat',
+      'runny nose',
+      'stuffy nose', 'cough', 'cold', 'fever', 'flu', 'nausea', 'stomach ache',
+      'belly pain', 'abdominal pain', 'diarrhea', 'constipation', 'fatigue',
+      'tired', 'muscle ache', 'back pain', 'joint pain', 'rash', 'minor cut',
+      'bruise', 'sprain', 'ear ache', 'sinus pressure', 'allergies',
+      'minor burn', 'cold symptoms', 'flu symptoms',
+
+      // French
+      'mal de tête', 'mal de gorge', 'nez qui coule', 'toux', 'rhume', 'fièvre',
+      'grippe', 'nausée', 'mal de ventre', 'diarrhée', 'fatigue', 'mal de dos',
+      'éruption cutanée',
+
+      // Chinese
+      '头痛', '喉咙痛', '流鼻涕', '咳嗽', '感冒', '发烧', '流感', '恶心', '肚子痛',
+      '腹泻', '疲劳', '背痛', '皮疹',
+
+      // Hindi
+      'सिरदर्द', 'गले में दर्द', 'नाक बहना', 'खांसी', 'जुकाम', 'बुखार', 'फ्लू',
+      'जी मिचलाना', 'पेट दर्द', 'दस्त', 'थकान', 'कमर दर्द', 'चकत्ते'
+    ];
+
+    final lowerInput = input.toLowerCase();
+    return nonEmergencySymptoms
+        .any((symptom) => lowerInput.contains(symptom.toLowerCase()));
   }
 
   void _triggerEmergencyMode() {

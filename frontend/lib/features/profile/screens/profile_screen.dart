@@ -120,6 +120,53 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
+            const SizedBox(height: 8),
+
+            // Google Authentication Status
+            Consumer(
+              builder: (context, ref, child) {
+                final authNotifier = ref.read(authStateProvider.notifier);
+                final isGoogleUser = authNotifier.isGoogleUser();
+
+                if (isGoogleUser) {
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: NetworkImage(
+                                  'https://developers.google.com/identity/images/g-logo.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Signed in with Google',
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ],
         ),
       ),
@@ -242,10 +289,16 @@ class ProfileScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
-              authNotifier.signOut();
-              context.go('/auth/login');
+
+              // Sign out and ensure navigation
+              await authNotifier.signOut();
+
+              // Force navigation to login screen
+              if (context.mounted) {
+                context.go('/auth/login');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

@@ -18,9 +18,10 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="HackTheBrain 2025 Healthcare AI System">
+  <meta name="description" content="Healthcare AI - Revolutionary AI-powered healthcare triage system for HackTheBrain 2025">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Mobile app meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Healthcare AI">
@@ -29,11 +30,14 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
+  <!-- Google Sign-In -->
+  <meta name="google-signin-client_id" content="881487619712-duej6k7eafl73dllukn312mim5fut2u0.apps.googleusercontent.com">
+
   <title>Healthcare AI - HackTheBrain 2025</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Google Maps JavaScript API -->
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDU_FzWafxPvEDbUsVDM3g5fcZgRtGa_88&libraries=places"></script>
+  <!-- Google Maps JavaScript API with async loading -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDU_FzWafxPvEDbUsVDM3g5fcZgRtGa_88&libraries=places&loading=async"></script>
 
   <style>
     body {
@@ -47,20 +51,42 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .loading-content {
+      text-align: center;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid white;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div class="loading">
-    <p>🏥 Loading Healthcare AI System...</p>
+  <div id="loading" class="loading">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <h2>Healthcare AI</h2>
+      <p>Loading your dashboard...</p>
+    </div>
   </div>
 
   <!-- This script installs service_worker.js to provide PWA functionality to
        application. For more information, see:
        https://developers.google.com/web/fundamentals/primers/service-workers -->
   <script>
-    var serviceWorkerVersion = null;
+    var serviceWorkerVersion = '{{flutter_service_worker_version}}';
     var scriptLoaded = false;
     function loadMainDartJs() {
       if (scriptLoaded) {
@@ -70,6 +96,10 @@
       var scriptTag = document.createElement('script');
       scriptTag.src = 'main.dart.js';
       scriptTag.type = 'application/javascript';
+      scriptTag.onload = function() {
+        // Hide loading screen when app is ready
+        document.getElementById('loading').style.display = 'none';
+      };
       document.body.append(scriptTag);
     }
 
@@ -111,8 +141,8 @@
         // fallback to plain <script> tag.
         setTimeout(() => {
           if (!scriptLoaded) {
-            console.warn(
-              'Failed to load app from service worker. Falling back to plain <script> tag.',
+            console.info(
+              'Loading app directly (service worker not ready).',
             );
             loadMainDartJs();
           }
